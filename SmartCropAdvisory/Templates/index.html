@@ -1,1259 +1,2117 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Smart Crop Advisory System - Empowering Indian Farmers</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css">
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css"
+    />
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-        :root {
-            --primary: #00A86B;
-            --secondary: #FF8C00;
-            --dark: #1a1a2e;
-            --light: #f8f9fa;
-            --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --success: #4CAF50;
-        }
+      :root {
+        --primary: #00a86b;
+        --secondary: #ff8c00;
+        --dark: #1a1a2e;
+        --light: #f8f9fa;
+        --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --success: #4caf50;
+      }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow-x: hidden;
-            background: var(--light);
-        }
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        overflow-x: hidden;
+        background: var(--light);
+      }
 
-        /* Loading Screen */
-        .loader-wrapper {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.5s, visibility 0.5s;
-        }
+      /* Loading Screen */
+      .loader-wrapper {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.5s, visibility 0.5s;
+      }
 
-        .loader {
-            width: 80px;
-            height: 80px;
-            border: 5px solid rgba(255,255,255,0.3);
-            border-top: 5px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
+      .loader {
+        width: 80px;
+        height: 80px;
+        border: 5px solid rgba(255, 255, 255, 0.3);
+        border-top: 5px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
         }
-
-        /* Navigation */
-        nav {
-            position: fixed;
-            width: 100%;
-            top: 0;
-            background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
-            z-index: 1000;
-            transition: all 0.3s;
+        100% {
+          transform: rotate(360deg);
         }
+      }
 
-        .nav-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+      /* Navigation */
+      nav {
+        position: fixed;
+        width: 100%;
+        top: 0;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        transition: all 0.3s;
+      }
+
+      .nav-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .logo {
+        font-size: 1.5rem;
+        font-weight: bold;
+        background: var(--gradient);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 2rem;
+        list-style: none;
+        align-items: center;
+      }
+
+      .nav-links a {
+        text-decoration: none;
+        color: var(--dark);
+        font-weight: 500;
+        transition: all 0.3s;
+        position: relative;
+      }
+
+      .nav-links a::after {
+        content: "";
+        position: absolute;
+        bottom: -5px;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background: var(--gradient);
+        transition: width 0.3s;
+      }
+
+      .nav-links a:hover::after {
+        width: 100%;
+      }
+
+      .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .demo-btn {
+        background: var(--gradient);
+        color: white;
+        padding: 0.7rem 1.5rem;
+        border-radius: 50px;
+        text-decoration: none;
+        font-weight: bold;
+        transition: transform 0.3s, box-shadow 0.3s;
+        cursor: pointer;
+        border: none;
+      }
+
+      .demo-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+      }
+
+      /* User Profile Section */
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        background: rgba(102, 126, 234, 0.1);
+        transition: all 0.3s;
+        position: relative;
+      }
+
+      .user-profile:hover {
+        background: rgba(102, 126, 234, 0.2);
+      }
+
+      .user-avatar {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        background: var(--gradient);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.2rem;
+      }
+
+      .user-name {
+        font-weight: 600;
+        color: var(--dark);
+        max-width: 150px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      /* User Dropdown */
+      .user-dropdown {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        margin-top: 0.5rem;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        min-width: 250px;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s;
+        z-index: 1001;
+      }
+
+      .user-dropdown.show {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+
+      .dropdown-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #eee;
+      }
+
+      .dropdown-header .user-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .dropdown-header .user-avatar-large {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--gradient);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.5rem;
+      }
+
+      .dropdown-header .user-details h4 {
+        margin: 0;
+        color: var(--dark);
+      }
+
+      .dropdown-header .user-details p {
+        margin: 0;
+        color: #666;
+        font-size: 0.9rem;
+      }
+
+      .dropdown-menu {
+        padding: 0.5rem;
+      }
+
+      .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.8rem 1rem;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        color: var(--dark);
+      }
+
+      .dropdown-item:hover {
+        background: rgba(102, 126, 234, 0.1);
+      }
+
+      .dropdown-item-icon {
+        width: 35px;
+        height: 35px;
+        border-radius: 10px;
+        background: rgba(102, 126, 234, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+      }
+
+      .dropdown-divider {
+        height: 1px;
+        background: #eee;
+        margin: 0.5rem 0;
+      }
+
+      .dropdown-item.logout {
+        color: #e74c3c;
+      }
+
+      .dropdown-item.logout .dropdown-item-icon {
+        background: rgba(231, 76, 60, 0.1);
+      }
+
+      /* Login Modal */
+      .login-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s;
+      }
+
+      .login-modal.show {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .login-container {
+        background: white;
+        border-radius: 20px;
+        max-width: 450px;
+        width: 90%;
+        padding: 2.5rem;
+        transform: scale(0.9);
+        transition: all 0.3s;
+        position: relative;
+      }
+
+      .login-modal.show .login-container {
+        transform: scale(1);
+      }
+
+      .close-btn {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.1);
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        transition: all 0.3s;
+      }
+
+      .close-btn:hover {
+        background: rgba(0, 0, 0, 0.2);
+        transform: rotate(90deg);
+      }
+
+      .login-header {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+
+      .login-header h2 {
+        margin-bottom: 0.5rem;
+        background: var(--gradient);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .login-header p {
+        color: #666;
+        font-size: 0.95rem;
+      }
+
+      .login-form {
+        margin-bottom: 1.5rem;
+      }
+
+      .form-field {
+        margin-bottom: 1.5rem;
+      }
+
+      .form-field label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: var(--dark);
+        font-weight: 500;
+      }
+
+      .form-field input {
+        width: 100%;
+        padding: 0.8rem 1rem;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 1rem;
+        transition: all 0.3s;
+      }
+
+      .form-field input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      .remember-forgot {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+      }
+
+      .remember-me {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .forgot-link {
+        color: #667eea;
+        text-decoration: none;
+        font-size: 0.9rem;
+      }
+
+      .login-btn {
+        width: 100%;
+        padding: 1rem;
+        background: var(--gradient);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .login-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+      }
+
+      .divider {
+        text-align: center;
+        margin: 1.5rem 0;
+        position: relative;
+      }
+
+      .divider::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: #e0e0e0;
+      }
+
+      .divider span {
+        background: white;
+        padding: 0 1rem;
+        position: relative;
+        color: #999;
+        font-size: 0.9rem;
+      }
+
+      .social-login {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .social-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.8rem;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        color: var(--dark);
+        font-weight: 500;
+      }
+
+      .social-btn:hover {
+        background: #f8f9fa;
+        border-color: #667eea;
+      }
+
+      .switch-form {
+        text-align: center;
+        margin-top: 1.5rem;
+        color: #666;
+      }
+
+      .switch-form a {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      /* Hero Section */
+      .hero {
+        margin-top: 80px;
+        min-height: 90vh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        position: relative;
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+      }
+
+      .hero-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 3rem;
+        align-items: center;
+        z-index: 2;
+        position: relative;
+      }
+
+      .hero-text h1 {
+        font-size: 3.5rem;
+        color: white;
+        margin-bottom: 1rem;
+        animation: fadeInUp 1s;
+      }
+
+      .hero-text p {
+        font-size: 1.3rem;
+        color: rgba(255, 255, 255, 0.9);
+        margin-bottom: 2rem;
+        animation: fadeInUp 1s 0.2s both;
+      }
+
+      .hero-stats {
+        display: flex;
+        gap: 2rem;
+        margin-bottom: 2rem;
+        animation: fadeInUp 1s 0.4s both;
+      }
+
+      .stat {
+        text-align: center;
+        color: white;
+      }
+
+      .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        display: block;
+      }
+
+      .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+      }
+
+      .hero-buttons {
+        display: flex;
+        gap: 1rem;
+        animation: fadeInUp 1s 0.6s both;
+      }
+
+      .btn-primary,
+      .btn-secondary {
+        padding: 1rem 2rem;
+        border-radius: 50px;
+        text-decoration: none;
+        font-weight: bold;
+        transition: all 0.3s;
+        display: inline-block;
+      }
+
+      .btn-primary {
+        background: white;
+        color: #667eea;
+      }
+
+      .btn-secondary {
+        background: transparent;
+        color: white;
+        border: 2px solid white;
+      }
+
+      .btn-primary:hover,
+      .btn-secondary:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+      }
+
+      .hero-visual {
+        position: relative;
+        animation: float 3s ease-in-out infinite;
+      }
+
+      .phone-mockup {
+        width: 100%;
+        max-width: 400px;
+        background: white;
+        border-radius: 30px;
+        padding: 20px;
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+      }
+
+      .phone-screen {
+        background: var(--light);
+        border-radius: 20px;
+        padding: 1.5rem;
+        min-height: 500px;
+      }
+
+      /* Features Section */
+      .features {
+        padding: 5rem 2rem;
+        background: white;
+      }
+
+      .section-header {
+        text-align: center;
+        max-width: 600px;
+        margin: 0 auto 4rem;
+      }
+
+      .section-header h2 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        background: var(--gradient);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .features-grid {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+      }
+
+      .feature-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .feature-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 5px;
+        background: var(--gradient);
+      }
+
+      .feature-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+      }
+
+      .feature-icon {
+        width: 60px;
+        height: 60px;
+        background: var(--gradient);
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+        font-size: 1.5rem;
+      }
+
+      .feature-card h3 {
+        margin-bottom: 1rem;
+        color: var(--dark);
+      }
+
+      .feature-card p {
+        color: #666;
+        line-height: 1.6;
+      }
+
+      /* Demo Section */
+      .demo-section {
+        padding: 5rem 2rem;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      }
+
+      .demo-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 30px;
+        padding: 3rem;
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.1);
+      }
+
+      .demo-tabs {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        border-bottom: 2px solid #eee;
+      }
+
+      .tab {
+        padding: 1rem 2rem;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+        color: #666;
+        transition: all 0.3s;
+        position: relative;
+      }
+
+      .tab.active {
+        color: #667eea;
+      }
+
+      .tab.active::after {
+        content: "";
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: var(--gradient);
+      }
+
+      .tab-content {
+        display: none;
+        animation: fadeIn 0.5s;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+      }
+
+      .form-group {
+        position: relative;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #333;
+        font-weight: 500;
+      }
+
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        padding: 0.8rem;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 1rem;
+        transition: all 0.3s;
+      }
+
+      .form-group input:focus,
+      .form-group select:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      .submit-btn {
+        background: var(--gradient);
+        color: white;
+        padding: 1rem 3rem;
+        border: none;
+        border-radius: 50px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .submit-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+      }
+
+      /* Results Section */
+      .results {
+        margin-top: 2rem;
+        padding: 2rem;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        border-radius: 20px;
+        display: none;
+      }
+
+      .results.show {
+        display: block;
+        animation: slideUp 0.5s;
+      }
+
+      .crop-recommendations {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+      }
+
+      .crop-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 15px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s;
+      }
+
+      .crop-card:hover {
+        transform: scale(1.05);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+      }
+
+      .crop-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+      }
+
+      .crop-name {
+        font-size: 1.3rem;
+        font-weight: bold;
+        color: var(--dark);
+        margin-bottom: 0.5rem;
+      }
+
+      .crop-profit {
+        color: var(--success);
+        font-size: 1.1rem;
+        font-weight: bold;
+      }
+
+      .crop-details {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #eee;
+        font-size: 0.9rem;
+        color: #666;
+      }
+
+      /* Charts */
+      .charts-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 2rem;
+        margin-top: 2rem;
+      }
+
+      .chart-box {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      }
+
+      .chart-title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin-bottom: 1rem;
+        color: var(--dark);
+      }
+
+      /* Impact Section */
+      .impact {
+        padding: 5rem 2rem;
+        background: white;
+      }
+
+      .impact-grid {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+      }
+
+      .impact-card {
+        text-align: center;
+        padding: 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px;
+        color: white;
+        transition: all 0.3s;
+      }
+
+      .impact-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
+      }
+
+      .impact-number {
+        font-size: 3rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+      }
+
+      .impact-label {
+        font-size: 1.1rem;
+        opacity: 0.9;
+      }
+
+      /* Footer */
+      footer {
+        background: var(--dark);
+        color: white;
+        padding: 3rem 2rem;
+        text-align: center;
+      }
+
+      .footer-content {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .team-info {
+        margin-bottom: 2rem;
+      }
+
+      .team-info h3 {
+        margin-bottom: 1rem;
+        color: #667eea;
+      }
+
+      .social-links {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 2rem;
+      }
+
+      .social-links a {
+        width: 40px;
+        height: 40px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        text-decoration: none;
+        transition: all 0.3s;
+      }
+
+      .social-links a:hover {
+        background: #667eea;
+        transform: translateY(-3px);
+      }
+
+      /* Notification */
+      .notification {
+        position: fixed;
+        top: 100px;
+        right: 20px;
+        background: var(--success);
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        transform: translateX(400px);
+        transition: transform 0.3s;
+        z-index: 2000;
+      }
+
+      .notification.show {
+        transform: translateX(0);
+      }
+
+      /* Animations */
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
         }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-            background: var(--gradient);
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
+      }
 
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-20px);
+        }
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
         .nav-links {
-            display: flex;
-            gap: 2rem;
-            list-style: none;
-        }
-
-        .nav-links a {
-            text-decoration: none;
-            color: var(--dark);
-            font-weight: 500;
-            transition: all 0.3s;
-            position: relative;
-        }
-
-        .nav-links a::after {
-            content: '';
-            position: absolute;
-            bottom: -5px;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background: var(--gradient);
-            transition: width 0.3s;
-        }
-
-        .nav-links a:hover::after {
-            width: 100%;
-        }
-
-        .demo-btn {
-            background: var(--gradient);
-            color: white;
-            padding: 0.7rem 1.5rem;
-            border-radius: 50px;
-            text-decoration: none;
-            font-weight: bold;
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-
-        .demo-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
-        }
-
-        /* Hero Section */
-        .hero {
-            margin-top: 80px;
-            min-height: 90vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            position: relative;
-            display: flex;
-            align-items: center;
-            overflow: hidden;
+          display: none;
         }
 
         .hero-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 3rem;
-            align-items: center;
-            z-index: 2;
-            position: relative;
+          grid-template-columns: 1fr;
+          text-align: center;
         }
 
         .hero-text h1 {
-            font-size: 3.5rem;
-            color: white;
-            margin-bottom: 1rem;
-            animation: fadeInUp 1s;
-        }
-
-        .hero-text p {
-            font-size: 1.3rem;
-            color: rgba(255,255,255,0.9);
-            margin-bottom: 2rem;
-            animation: fadeInUp 1s 0.2s both;
+          font-size: 2.5rem;
         }
 
         .hero-stats {
-            display: flex;
-            gap: 2rem;
-            margin-bottom: 2rem;
-            animation: fadeInUp 1s 0.4s both;
-        }
-
-        .stat {
-            text-align: center;
-            color: white;
-        }
-
-        .stat-number {
-            font-size: 2.5rem;
-            font-weight: bold;
-            display: block;
-        }
-
-        .stat-label {
-            font-size: 0.9rem;
-            opacity: 0.9;
+          justify-content: center;
         }
 
         .hero-buttons {
-            display: flex;
-            gap: 1rem;
-            animation: fadeInUp 1s 0.6s both;
+          justify-content: center;
         }
 
-        .btn-primary, .btn-secondary {
-            padding: 1rem 2rem;
-            border-radius: 50px;
-            text-decoration: none;
-            font-weight: bold;
-            transition: all 0.3s;
-            display: inline-block;
-        }
-
-        .btn-primary {
-            background: white;
-            color: #667eea;
-        }
-
-        .btn-secondary {
-            background: transparent;
-            color: white;
-            border: 2px solid white;
-        }
-
-        .btn-primary:hover, .btn-secondary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
-        }
-
-        .hero-visual {
-            position: relative;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        .phone-mockup {
-            width: 100%;
-            max-width: 400px;
-            background: white;
-            border-radius: 30px;
-            padding: 20px;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.3);
-        }
-
-        .phone-screen {
-            background: var(--light);
-            border-radius: 20px;
-            padding: 1.5rem;
-            min-height: 500px;
-        }
-
-        /* Features Section */
-        .features {
-            padding: 5rem 2rem;
-            background: white;
-        }
-
-        .section-header {
-            text-align: center;
-            max-width: 600px;
-            margin: 0 auto 4rem;
-        }
-
-        .section-header h2 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            background: var(--gradient);
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .features-grid {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-        }
-
-        .feature-card {
-            background: white;
-            padding: 2rem;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .feature-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 5px;
-            background: var(--gradient);
-        }
-
-        .feature-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-        }
-
-        .feature-icon {
-            width: 60px;
-            height: 60px;
-            background: var(--gradient);
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1.5rem;
-            font-size: 1.5rem;
-        }
-
-        .feature-card h3 {
-            margin-bottom: 1rem;
-            color: var(--dark);
-        }
-
-        .feature-card p {
-            color: #666;
-            line-height: 1.6;
-        }
-
-        /* Demo Section */
-        .demo-section {
-            padding: 5rem 2rem;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-        }
-
-        .demo-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 30px;
-            padding: 3rem;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.1);
-        }
-
-        .demo-tabs {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            border-bottom: 2px solid #eee;
-        }
-
-        .tab {
-            padding: 1rem 2rem;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            color: #666;
-            transition: all 0.3s;
-            position: relative;
-        }
-
-        .tab.active {
-            color: #667eea;
-        }
-
-        .tab.active::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: var(--gradient);
-        }
-
-        .tab-content {
-            display: none;
-            animation: fadeIn 0.5s;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .form-group {
-            position: relative;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: #333;
-            font-weight: 500;
-        }
-
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 0.8rem;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 1rem;
-            transition: all 0.3s;
-        }
-
-        .form-group input:focus, .form-group select:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .submit-btn {
-            background: var(--gradient);
-            color: white;
-            padding: 1rem 3rem;
-            border: none;
-            border-radius: 50px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .submit-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
-        }
-
-        /* Results Section */
-        .results {
-            margin-top: 2rem;
-            padding: 2rem;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            border-radius: 20px;
-            display: none;
-        }
-
-        .results.show {
-            display: block;
-            animation: slideUp 0.5s;
-        }
-
-        .crop-recommendations {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .crop-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 15px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s;
-        }
-
-        .crop-card:hover {
-            transform: scale(1.05);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
-        }
-
-        .crop-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-
-        .crop-name {
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: var(--dark);
-            margin-bottom: 0.5rem;
-        }
-
-        .crop-profit {
-            color: var(--success);
-            font-size: 1.1rem;
-            font-weight: bold;
-        }
-
-        .crop-details {
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 1px solid #eee;
-            font-size: 0.9rem;
-            color: #666;
-        }
-
-        /* Charts */
         .charts-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 2rem;
-            margin-top: 2rem;
+          grid-template-columns: 1fr;
         }
 
-        .chart-box {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        .user-dropdown {
+          right: -50px;
         }
-
-        .chart-title {
-            font-size: 1.2rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-            color: var(--dark);
-        }
-
-        /* Impact Section */
-        .impact {
-            padding: 5rem 2rem;
-            background: white;
-        }
-
-        .impact-grid {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
-        }
-
-        .impact-card {
-            text-align: center;
-            padding: 2rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 20px;
-            color: white;
-            transition: all 0.3s;
-        }
-
-        .impact-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
-        }
-
-        .impact-number {
-            font-size: 3rem;
-            font-weight: bold;
-            margin-bottom: 0.5rem;
-        }
-
-        .impact-label {
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-
-        /* Footer */
-        footer {
-            background: var(--dark);
-            color: white;
-            padding: 3rem 2rem;
-            text-align: center;
-        }
-
-        .footer-content {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .team-info {
-            margin-bottom: 2rem;
-        }
-
-        .team-info h3 {
-            margin-bottom: 1rem;
-            color: #667eea;
-        }
-
-        .social-links {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-
-        .social-links a {
-            width: 40px;
-            height: 40px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            text-decoration: none;
-            transition: all 0.3s;
-        }
-
-        .social-links a:hover {
-            background: #667eea;
-            transform: translateY(-3px);
-        }
-
-        /* Animations */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .nav-links {
-                display: none;
-            }
-
-            .hero-content {
-                grid-template-columns: 1fr;
-                text-align: center;
-            }
-
-            .hero-text h1 {
-                font-size: 2.5rem;
-            }
-
-            .hero-stats {
-                justify-content: center;
-            }
-
-            .hero-buttons {
-                justify-content: center;
-            }
-
-            .charts-container {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Notification */
-        .notification {
-            position: fixed;
-            top: 100px;
-            right: 20px;
-            background: var(--success);
-            color: white;
-            padding: 1rem 2rem;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transform: translateX(400px);
-            transition: transform 0.3s;
-            z-index: 2000;
-        }
-
-        .notification.show {
-            transform: translateX(0);
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <!-- Loading Screen -->
     <div class="loader-wrapper" id="loader">
-        <div class="loader"></div>
+      <div class="loader"></div>
     </div>
 
     <!-- Navigation -->
     <nav id="navbar">
-        <div class="nav-container">
-            <div class="logo">
-                🌾 Smart Crop Advisory
-            </div>
-            <ul class="nav-links">
-                <li><a href="#home">Home</a></li>
-                <li><a href="#features">Features</a></li>
-                <li><a href="#demo">Demo</a></li>
-                <li><a href="#impact">Impact</a></li>
-            </ul>
-            <a href="#demo" class="demo-btn">Try Demo</a>
+      <div class="nav-container">
+        <div class="logo">🌾 Smart Crop Advisory</div>
+        <ul class="nav-links">
+          <li><a href="#home">Home</a></li>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#demo">Demo</a></li>
+          <li><a href="#impact">Impact</a></li>
+          <li id="profileNavItem" style="display: none">
+            <a href="#" onclick="showProfile(); return false;">Profile</a>
+          </li>
+        </ul>
+        <div class="nav-right" id="userSection">
+          <!-- This will be dynamically populated -->
+          <a href="#" class="demo-btn" onclick="showLogin(); return false;"
+            >Login / Register</a
+          >
         </div>
+      </div>
     </nav>
+
+    <!-- User Dropdown Menu -->
+    <div class="user-dropdown" id="userDropdown">
+      <div class="dropdown-header">
+        <div class="user-info">
+          <div class="user-avatar-large" id="dropdownAvatar">U</div>
+          <div class="user-details">
+            <h4 id="dropdownUsername">User Name</h4>
+            <p id="dropdownEmail">user@example.com</p>
+          </div>
+        </div>
+      </div>
+      <div class="dropdown-menu">
+        <a
+          href="#"
+          class="dropdown-item"
+          onclick="showProfile(); return false;"
+        >
+          <div class="dropdown-item-icon">👤</div>
+          <span>My Profile</span>
+        </a>
+        <a
+          href="#"
+          class="dropdown-item"
+          onclick="showDashboard(); return false;"
+        >
+          <div class="dropdown-item-icon">📊</div>
+          <span>Dashboard</span>
+        </a>
+        <a
+          href="#"
+          class="dropdown-item"
+          onclick="showHistory(); return false;"
+        >
+          <div class="dropdown-item-icon">📜</div>
+          <span>Crop History</span>
+        </a>
+        <div class="dropdown-divider"></div>
+        <a
+          href="#"
+          class="dropdown-item"
+          onclick="showSettings(); return false;"
+        >
+          <div class="dropdown-item-icon">⚙️</div>
+          <span>Settings</span>
+        </a>
+        <a
+          href="#"
+          class="dropdown-item logout"
+          onclick="handleLogout(); return false;"
+        >
+          <div class="dropdown-item-icon">🚪</div>
+          <span>Logout</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div
+      class="login-modal"
+      id="loginModal"
+      onclick="if(event.target === this) closeLogin()"
+    >
+      <div class="login-container">
+        <button class="close-btn" onclick="closeLogin()">✕</button>
+        <div class="login-header">
+          <h2 id="modalTitle">Welcome Back!</h2>
+          <p id="modalSubtitle">
+            Login to access your personalized crop recommendations
+          </p>
+        </div>
+
+        <form class="login-form" id="loginForm" onsubmit="handleLogin(event)">
+          <div class="form-field">
+            <label for="usernameInput">Username or Email</label>
+            <input
+              type="text"
+              id="usernameInput"
+              placeholder="Enter username or email"
+              required
+            />
+          </div>
+          <div class="form-field">
+            <label for="passwordInput">Password</label>
+            <input
+              type="password"
+              id="passwordInput"
+              placeholder="Enter password"
+              required
+            />
+          </div>
+          <div class="remember-forgot">
+            <label class="remember-me">
+              <input type="checkbox" /> Remember me
+            </label>
+            <a href="#" class="forgot-link">Forgot Password?</a>
+          </div>
+          <button type="submit" class="login-btn" id="submitBtn">Login</button>
+        </form>
+
+        <div class="divider">
+          <span>or continue with</span>
+        </div>
+
+        <div class="social-login">
+          <button class="social-btn" onclick="handleSocialLogin('google')">
+            <span>🔍</span> Google
+          </button>
+          <button class="social-btn" onclick="handleSocialLogin('phone')">
+            <span>📱</span> Phone Number
+          </button>
+        </div>
+
+        <div class="switch-form">
+          <span id="switchText">Don't have an account?</span>
+          <a href="#" id="switchLink" onclick="toggleForm(); return false;"
+            >Sign Up</a
+          >
+        </div>
+      </div>
+    </div>
 
     <!-- Hero Section -->
     <section class="hero" id="home">
-        <div class="hero-content">
-            <div class="hero-text">
-                <h1>Empowering 146 Million Small Farmers</h1>
-                <p>AI-powered crop recommendations tailored to your soil, weather, and budget</p>
-                <div class="hero-stats">
-                    <div class="stat">
-                        <span class="stat-number" data-target="146">0</span>
-                        <span class="stat-label">Million Farmers</span>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-number" data-target="25">0</span>
-                        <span class="stat-label">% Yield Increase</span>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-number" data-target="50">0</span>
-                        <span class="stat-label">+ Crops Supported</span>
-                    </div>
-                </div>
-                <div class="hero-buttons">
-                    <a href="#demo" class="btn-primary">Start Demo</a>
-                    <a href="#features" class="btn-secondary">Learn More</a>
-                </div>
+      <div class="hero-content">
+        <div class="hero-text">
+          <h1>Empowering 146 Million Small Farmers</h1>
+          <p>
+            AI-powered crop recommendations tailored to your soil, weather, and
+            budget
+          </p>
+          <div class="hero-stats">
+            <div class="stat">
+              <span class="stat-number" data-target="146">0</span>
+              <span class="stat-label">Million Farmers</span>
             </div>
-            <div class="hero-visual">
-                <div class="phone-mockup">
-                    <div class="phone-screen">
-                        <div style="background: var(--gradient); padding: 1rem; border-radius: 10px; margin-bottom: 1rem;">
-                            <h3 style="color: white; margin-bottom: 0.5rem;">Welcome, Farmer!</h3>
-                            <p style="color: rgba(255,255,255,0.9); font-size: 0.9rem;">Your personalized crop advisor</p>
-                        </div>
-                        <div style="background: white; padding: 1rem; border-radius: 10px; margin-bottom: 1rem;">
-                            <p style="font-weight: bold; color: #333; margin-bottom: 0.5rem;">📍 Location: Maharashtra</p>
-                            <p style="color: #666;">Soil: Black Cotton</p>
-                        </div>
-                        <div style="background: #e8f5e9; padding: 1rem; border-radius: 10px;">
-                            <p style="font-weight: bold; color: #2e7d32; margin-bottom: 0.5rem;">Recommended Crop</p>
-                            <p style="font-size: 1.2rem; color: #1b5e20;">🌱 Soybean</p>
-                            <p style="color: #4caf50;">Expected Profit: ₹45,000/hectare</p>
-                        </div>
-                    </div>
-                </div>
+            <div class="stat">
+              <span class="stat-number" data-target="25">0</span>
+              <span class="stat-label">% Yield Increase</span>
             </div>
+            <div class="stat">
+              <span class="stat-number" data-target="50">0</span>
+              <span class="stat-label">+ Crops Supported</span>
+            </div>
+          </div>
+          <div class="hero-buttons">
+            <a href="#demo" class="btn-primary">Start Demo</a>
+            <a href="#features" class="btn-secondary">Learn More</a>
+          </div>
         </div>
+        <div class="hero-visual">
+          <div class="phone-mockup">
+            <div class="phone-screen">
+              <div
+                style="
+                  background: var(--gradient);
+                  padding: 1rem;
+                  border-radius: 10px;
+                  margin-bottom: 1rem;
+                "
+              >
+                <h3 style="color: white; margin-bottom: 0.5rem">
+                  Welcome, Farmer!
+                </h3>
+                <p style="color: rgba(255, 255, 255, 0.9); font-size: 0.9rem">
+                  Your personalized crop advisor
+                </p>
+              </div>
+              <div
+                style="
+                  background: white;
+                  padding: 1rem;
+                  border-radius: 10px;
+                  margin-bottom: 1rem;
+                "
+              >
+                <p
+                  style="font-weight: bold; color: #333; margin-bottom: 0.5rem"
+                >
+                  📍 Location: Maharashtra
+                </p>
+                <p style="color: #666">Soil: Black Cotton</p>
+              </div>
+              <div
+                style="background: #e8f5e9; padding: 1rem; border-radius: 10px"
+              >
+                <p
+                  style="
+                    font-weight: bold;
+                    color: #2e7d32;
+                    margin-bottom: 0.5rem;
+                  "
+                >
+                  Recommended Crop
+                </p>
+                <p style="font-size: 1.2rem; color: #1b5e20">🌱 Soybean</p>
+                <p style="color: #4caf50">Expected Profit: ₹45,000/hectare</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- Features Section -->
     <section class="features" id="features">
-        <div class="section-header" data-aos="fade-up">
-            <h2>Intelligent Features for Smart Farming</h2>
-            <p>Everything you need to make informed farming decisions</p>
+      <div class="section-header" data-aos="fade-up">
+        <h2>Intelligent Features for Smart Farming</h2>
+        <p>Everything you need to make informed farming decisions</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card" data-aos="fade-up" data-aos-delay="100">
+          <div class="feature-icon">🌍</div>
+          <h3>Hyperlocal Insights</h3>
+          <p>
+            Village-level recommendations based on your exact soil type, weather
+            patterns, and local market conditions
+          </p>
         </div>
-        <div class="features-grid">
-            <div class="feature-card" data-aos="fade-up" data-aos-delay="100">
-                <div class="feature-icon">🌍</div>
-                <h3>Hyperlocal Insights</h3>
-                <p>Village-level recommendations based on your exact soil type, weather patterns, and local market conditions</p>
-            </div>
-            <div class="feature-card" data-aos="fade-up" data-aos-delay="200">
-                <div class="feature-icon">🤖</div>
-                <h3>AI-Powered Analysis</h3>
-                <p>Machine learning algorithms analyze historical data to predict yields and optimize crop selection</p>
-            </div>
-            <div class="feature-card" data-aos="fade-up" data-aos-delay="300">
-                <div class="feature-icon">📱</div>
-                <h3>Works Offline</h3>
-                <p>Progressive web app that works even without internet, perfect for remote farming areas</p>
-            </div>
-            <div class="feature-card" data-aos="fade-up" data-aos-delay="400">
-                <div class="feature-icon">💰</div>
-                <h3>Profit Maximization</h3>
-                <p>Compare potential returns across different crops and choose the most profitable option for your land</p>
-            </div>
-            <div class="feature-card" data-aos="fade-up" data-aos-delay="500">
-                <div class="feature-icon">🌤️</div>
-                <h3>Weather Integration</h3>
-                <p>Real-time weather data and forecasts to help you make timely decisions about sowing and harvesting</p>
-            </div>
-            <div class="feature-card" data-aos="fade-up" data-aos-delay="600">
-                <div class="feature-icon">📊</div>
-                <h3>Market Trends</h3>
-                <p>Live market prices and demand forecasts to help you choose crops with the best market potential</p>
-            </div>
+        <div class="feature-card" data-aos="fade-up" data-aos-delay="200">
+          <div class="feature-icon">🤖</div>
+          <h3>AI-Powered Analysis</h3>
+          <p>
+            Machine learning algorithms analyze historical data to predict
+            yields and optimize crop selection
+          </p>
         </div>
+        <div class="feature-card" data-aos="fade-up" data-aos-delay="300">
+          <div class="feature-icon">📱</div>
+          <h3>Works Offline</h3>
+          <p>
+            Progressive web app that works even without internet, perfect for
+            remote farming areas
+          </p>
+        </div>
+        <div class="feature-card" data-aos="fade-up" data-aos-delay="400">
+          <div class="feature-icon">💰</div>
+          <h3>Profit Maximization</h3>
+          <p>
+            Compare potential returns across different crops and choose the most
+            profitable option for your land
+          </p>
+        </div>
+        <div class="feature-card" data-aos="fade-up" data-aos-delay="500">
+          <div class="feature-icon">🌤️</div>
+          <h3>Weather Integration</h3>
+          <p>
+            Real-time weather data and forecasts to help you make timely
+            decisions about sowing and harvesting
+          </p>
+        </div>
+        <div class="feature-card" data-aos="fade-up" data-aos-delay="600">
+          <div class="feature-icon">📊</div>
+          <h3>Market Trends</h3>
+          <p>
+            Live market prices and demand forecasts to help you choose crops
+            with the best market potential
+          </p>
+        </div>
+      </div>
     </section>
 
     <!-- Demo Section -->
     <section class="demo-section" id="demo">
-        <div class="section-header" data-aos="fade-up">
-            <h2>Try Our Smart Crop Advisory System</h2>
-            <p>Enter your farm details and get instant recommendations</p>
+      <div class="section-header" data-aos="fade-up">
+        <h2>Try Our Smart Crop Advisory System</h2>
+        <p>Enter your farm details and get instant recommendations</p>
+      </div>
+      <div class="demo-container" data-aos="fade-up">
+        <div class="demo-tabs">
+          <button class="tab active" onclick="switchTab('input')">
+            📝 Input Details
+          </button>
+          <button class="tab" onclick="switchTab('analysis')">
+            🔍 Analysis
+          </button>
+          <button class="tab" onclick="switchTab('results')">📊 Results</button>
         </div>
-        <div class="demo-container" data-aos="fade-up">
-            <div class="demo-tabs">
-                <button class="tab active" onclick="switchTab('input')">📝 Input Details</button>
-                <button class="tab" onclick="switchTab('analysis')">🔍 Analysis</button>
-                <button class="tab" onclick="switchTab('results')">📊 Results</button>
-            </div>
 
-            <div id="input" class="tab-content active">
-                <form id="cropForm">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Farmer Name</label>
-                            <input type="text" placeholder="Enter your name" value="Ravi Kumar">
-                        </div>
-                        <div class="form-group">
-                            <label>Location</label>
-                            <select>
-                                <option>Maharashtra - Marathwada</option>
-                                <option>Punjab - Ludhiana</option>
-                                <option>Uttar Pradesh - Agra</option>
-                                <option>Gujarat - Ahmedabad</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Land Size (Hectares)</label>
-                            <input type="number" placeholder="e.g., 1.5" value="1.5">
-                        </div>
-                        <div class="form-group">
-                            <label>Soil Type</label>
-                            <select>
-                                <option>Black Cotton Soil</option>
-                                <option>Red Soil</option>
-                                <option>Alluvial Soil</option>
-                                <option>Sandy Loam</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Soil pH</label>
-                            <input type="number" step="0.1" placeholder="e.g., 7.2" value="7.2">
-                        </div>
-                        <div class="form-group">
-                            <label>Water Source</label>
-                            <select>
-                                <option>Irrigation Available</option>
-                                <option>Rain-fed Only</option>
-                                <option>Partial Irrigation</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Budget per Hectare (₹)</label>
-                            <input type="number" placeholder="e.g., 30000" value="30000">
-                        </div>
-                        <div class="form-group">
-                            <label>Previous Crop</label>
-                            <select>
-                                <option>Wheat</option>
-                                <option>Rice</option>
-                                <option>Cotton</option>
-                                <option>Sugarcane</option>
-                            </select>
-                        </div>
-                    </div>
-                    <button type="submit" class="submit-btn">Get Recommendations</button>
-                </form>
+        <div id="input" class="tab-content active">
+          <form id="cropForm">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Farmer Name</label>
+                <input
+                  type="text"
+                  placeholder="Enter your name"
+                  value="Ravi Kumar"
+                />
+              </div>
+              <div class="form-group">
+                <label>Location</label>
+                <select>
+                  <option>Maharashtra - Marathwada</option>
+                  <option>Punjab - Ludhiana</option>
+                  <option>Uttar Pradesh - Agra</option>
+                  <option>Gujarat - Ahmedabad</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Land Size (Hectares)</label>
+                <input type="number" placeholder="e.g., 1.5" value="1.5" />
+              </div>
+              <div class="form-group">
+                <label>Soil Type</label>
+                <select>
+                  <option>Black Cotton Soil</option>
+                  <option>Red Soil</option>
+                  <option>Alluvial Soil</option>
+                  <option>Sandy Loam</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Soil pH</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="e.g., 7.2"
+                  value="7.2"
+                />
+              </div>
+              <div class="form-group">
+                <label>Water Source</label>
+                <select>
+                  <option>Irrigation Available</option>
+                  <option>Rain-fed Only</option>
+                  <option>Partial Irrigation</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Budget per Hectare (₹)</label>
+                <input type="number" placeholder="e.g., 30000" value="30000" />
+              </div>
+              <div class="form-group">
+                <label>Previous Crop</label>
+                <select>
+                  <option>Wheat</option>
+                  <option>Rice</option>
+                  <option>Cotton</option>
+                  <option>Sugarcane</option>
+                </select>
+              </div>
             </div>
-
-            <div id="analysis" class="tab-content">
-                <div style="text-align: center; padding: 3rem;">
-                    <div style="font-size: 4rem; margin-bottom: 1rem;">🔍</div>
-                    <h3 style="margin-bottom: 1rem;">Analyzing Your Farm Data...</h3>
-                    <div style="display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap;">
-                        <div style="padding: 1rem; background: #e3f2fd; border-radius: 10px;">
-                            <p style="font-weight: bold; color: #1976d2;">Soil Analysis</p>
-                            <p style="color: #666;">pH: 7.2 (Neutral)</p>
-                        </div>
-                        <div style="padding: 1rem; background: #f3e5f5; border-radius: 10px;">
-                            <p style="font-weight: bold; color: #7b1fa2;">Weather Forecast</p>
-                            <p style="color: #666;">Monsoon Expected</p>
-                        </div>
-                        <div style="padding: 1rem; background: #e8f5e9; border-radius: 10px;">
-                            <p style="font-weight: bold; color: #388e3c;">Market Trends</p>
-                            <p style="color: #666;">High Demand</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="results" class="tab-content">
-                <div class="results show">
-                    <h3 style="margin-bottom: 1.5rem; text-align: center;">🎯 Recommended Crops for Your Farm</h3>
-                    <div class="crop-recommendations">
-                        <div class="crop-card">
-                            <div class="crop-icon">🌾</div>
-                            <div class="crop-name">Pigeon Pea</div>
-                            <div class="crop-profit">₹38,000/hectare</div>
-                            <div class="crop-details">
-                                <p>Duration: 120-140 days</p>
-                                <p>Best Match: 88%</p>
-                            </div>
-                        </div>
-                        <div class="crop-card">
-                            <div class="crop-icon">🌽</div>
-                            <div class="crop-name">Maize</div>
-                            <div class="crop-profit">₹35,000/hectare</div>
-                            <div class="crop-details">
-                                <p>Duration: 80-95 days</p>
-                                <p>Best Match: 82%</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="charts-container">
-                        <div class="chart-box">
-                            <div class="chart-title">📈 Yield Comparison</div>
-                            <canvas id="yieldChart"></canvas>
-                        </div>
-                        <div class="chart-box">
-                            <div class="chart-title">💰 Profit Analysis</div>
-                            <canvas id="profitChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <button type="submit" class="submit-btn">
+              Get Recommendations
+            </button>
+          </form>
         </div>
+
+        <div id="analysis" class="tab-content">
+          <div style="text-align: center; padding: 3rem">
+            <div style="font-size: 4rem; margin-bottom: 1rem">🔍</div>
+            <h3 style="margin-bottom: 1rem">Analyzing Your Farm Data...</h3>
+            <div
+              style="
+                display: flex;
+                gap: 2rem;
+                justify-content: center;
+                flex-wrap: wrap;
+              "
+            >
+              <div
+                style="padding: 1rem; background: #e3f2fd; border-radius: 10px"
+              >
+                <p style="font-weight: bold; color: #1976d2">Soil Analysis</p>
+                <p style="color: #666">pH: 7.2 (Neutral)</p>
+              </div>
+              <div
+                style="padding: 1rem; background: #f3e5f5; border-radius: 10px"
+              >
+                <p style="font-weight: bold; color: #7b1fa2">
+                  Weather Forecast
+                </p>
+                <p style="color: #666">Monsoon Expected</p>
+              </div>
+              <div
+                style="padding: 1rem; background: #e8f5e9; border-radius: 10px"
+              >
+                <p style="font-weight: bold; color: #388e3c">Market Trends</p>
+                <p style="color: #666">High Demand</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="results" class="tab-content">
+          <div class="results show">
+            <h3 style="margin-bottom: 1.5rem; text-align: center">
+              🎯 Recommended Crops for Your Farm
+            </h3>
+            <div class="crop-recommendations">
+              <div class="crop-card">
+                <div class="crop-icon">🌱</div>
+                <div class="crop-name">Soybean</div>
+                <div class="crop-profit">₹45,000/hectare</div>
+                <div class="crop-details">
+                  <p>Duration: 90-100 days</p>
+                  <p>Best Match: 95%</p>
+                </div>
+              </div>
+              <div class="crop-card">
+                <div class="crop-icon">🌾</div>
+                <div class="crop-name">Pigeon Pea</div>
+                <div class="crop-profit">₹38,000/hectare</div>
+                <div class="crop-details">
+                  <p>Duration: 120-140 days</p>
+                  <p>Best Match: 88%</p>
+                </div>
+              </div>
+              <div class="crop-card">
+                <div class="crop-icon">🌽</div>
+                <div class="crop-name">Maize</div>
+                <div class="crop-profit">₹35,000/hectare</div>
+                <div class="crop-details">
+                  <p>Duration: 80-95 days</p>
+                  <p>Best Match: 82%</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="charts-container">
+              <div class="chart-box">
+                <div class="chart-title">📈 Yield Comparison</div>
+                <canvas id="yieldChart"></canvas>
+              </div>
+              <div class="chart-box">
+                <div class="chart-title">💰 Profit Analysis</div>
+                <canvas id="profitChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- Impact Section -->
     <section class="impact" id="impact">
-        <div class="section-header" data-aos="fade-up">
-            <h2>Our Impact Vision</h2>
-            <p>Transforming Indian agriculture, one farm at a time</p>
+      <div class="section-header" data-aos="fade-up">
+        <h2>Our Impact Vision</h2>
+        <p>Transforming Indian agriculture, one farm at a time</p>
+      </div>
+      <div class="impact-grid">
+        <div class="impact-card" data-aos="fade-up" data-aos-delay="100">
+          <div class="impact-number counter" data-target="10000">0</div>
+          <div class="impact-label">Farmers in Year 1</div>
         </div>
-        <div class="impact-grid">
-            <div class="impact-card" data-aos="fade-up" data-aos-delay="100">
-                <div class="impact-number counter" data-target="10000">0</div>
-                <div class="impact-label">Farmers in Year 1</div>
-            </div>
-            <div class="impact-card" data-aos="fade-up" data-aos-delay="200">
-                <div class="impact-number"><span class="counter" data-target="25">0</span>%</div>
-                <div class="impact-label">Yield Increase</div>
-            </div>
-            <div class="impact-card" data-aos="fade-up" data-aos-delay="300">
-                <div class="impact-number">₹<span class="counter" data-target="20">0</span>K</div>
-                <div class="impact-label">Extra Income/Hectare</div>
-            </div>
-            <div class="impact-card" data-aos="fade-up" data-aos-delay="400">
-                <div class="impact-number"><span class="counter" data-target="12">0</span></div>
-                <div class="impact-label">Indian Languages</div>
-            </div>
+        <div class="impact-card" data-aos="fade-up" data-aos-delay="200">
+          <div class="impact-number">
+            <span class="counter" data-target="25">0</span>%
+          </div>
+          <div class="impact-label">Yield Increase</div>
         </div>
+        <div class="impact-card" data-aos="fade-up" data-aos-delay="300">
+          <div class="impact-number">
+            ₹<span class="counter" data-target="20">0</span>K
+          </div>
+          <div class="impact-label">Extra Income/Hectare</div>
+        </div>
+        <div class="impact-card" data-aos="fade-up" data-aos-delay="400">
+          <div class="impact-number">
+            <span class="counter" data-target="12">0</span>
+          </div>
+          <div class="impact-label">Indian Languages</div>
+        </div>
+      </div>
     </section>
 
     <!-- Notification -->
     <div class="notification" id="notification">
-        ✅ Recommendations Generated Successfully!
+      ✅ Recommendations Generated Successfully!
     </div>
 
     <!-- Footer -->
     <footer>
-        <div class="footer-content">
-            <div class="team-info">
-                <h3>Smart India Hackathon 2025</h3>
-                <p>Project ID: SIH25010 | Team: InnovateFarmers</p>
-                <p>Building the future of Indian agriculture with AI</p>
-            </div>
-            <div class="social-links">
-                <a href="#">📧</a>
-                <a href="#">🐦</a>
-                <a href="#">💼</a>
-                <a href="#">🌐</a>
-            </div>
-            <p style="margin-top: 2rem; opacity: 0.7;">© 2025 Smart Crop Advisory System. Made with ❤️ for Indian Farmers</p>
+      <div class="footer-content">
+        <div class="team-info">
+          <h3>Smart India Hackathon 2025</h3>
+          <p>Project ID: SIH25010 | Team: InnovateFarmers</p>
+          <p>Building the future of Indian agriculture with AI</p>
         </div>
+        <div class="social-links">
+          <a href="#">📧</a>
+          <a href="#">🐦</a>
+          <a href="#">💼</a>
+          <a href="#">🌐</a>
+        </div>
+        <p style="margin-top: 2rem; opacity: 0.7">
+          © 2025 Smart Crop Advisory System. Made with ❤️ for Indian Farmers
+        </p>
+      </div>
     </footer>
 
     <script>
-        // Initialize AOS
-        AOS.init({
-            duration: 1000,
-            once: true
+      // Initialize AOS
+      AOS.init({
+        duration: 1000,
+        once: true,
+      });
+
+      // Hide loader when page loads
+      window.addEventListener("load", () => {
+        setTimeout(() => {
+          document.getElementById("loader").style.opacity = "0";
+          document.getElementById("loader").style.visibility = "hidden";
+        }, 1500);
+      });
+
+      // Smooth scrolling
+      document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+        anchor.addEventListener("click", function (e) {
+          if (this.getAttribute("href") === "#") return;
+          e.preventDefault();
+          const target = document.querySelector(this.getAttribute("href"));
+          if (target) {
+            target.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }
+        });
+      });
+
+      // Navbar scroll effect
+      window.addEventListener("scroll", () => {
+        const navbar = document.getElementById("navbar");
+        if (window.scrollY > 50) {
+          navbar.style.background = "rgba(255,255,255,0.98)";
+          navbar.style.boxShadow = "0 2px 20px rgba(0,0,0,0.1)";
+        } else {
+          navbar.style.background = "rgba(255,255,255,0.95)";
+          navbar.style.boxShadow = "0 2px 20px rgba(0,0,0,0.1)";
+        }
+      });
+
+      // Counter animation
+      const counters = document.querySelectorAll(".counter");
+      const speed = 200;
+
+      const countUp = () => {
+        counters.forEach((counter) => {
+          const target = +counter.getAttribute("data-target");
+          const count = +counter.innerText;
+          const inc = target / speed;
+
+          if (count < target) {
+            counter.innerText = Math.ceil(count + inc);
+            setTimeout(countUp, 10);
+          } else {
+            counter.innerText = target;
+          }
+        });
+      };
+
+      // Trigger counter animation on scroll
+      const observerOptions = {
+        threshold: 0.5,
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            countUp();
+            observer.unobserve(entry.target);
+          }
+        });
+      }, observerOptions);
+
+      document
+        .querySelectorAll(".stat-number, .impact-number")
+        .forEach((el) => {
+          if (
+            el.querySelector(".counter") ||
+            el.classList.contains("counter") ||
+            el.hasAttribute("data-target")
+          ) {
+            observer.observe(el);
+          }
         });
 
-        // Hide loader when page loads
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                document.getElementById('loader').style.opacity = '0';
-                document.getElementById('loader').style.visibility = 'hidden';
-            }, 1500);
+      // Tab switching
+      function switchTab(tabName) {
+        // Hide all tabs
+        document.querySelectorAll(".tab-content").forEach((tab) => {
+          tab.classList.remove("active");
         });
 
-        // Smooth scrolling
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            });
+        // Remove active class from all tab buttons
+        document.querySelectorAll(".tab").forEach((btn) => {
+          btn.classList.remove("active");
         });
 
-        // Navbar scroll effect
-        window.addEventListener('scroll', () => {
-            const navbar = document.getElementById('navbar');
-            if (window.scrollY > 50) {
-                navbar.style.background = 'rgba(255,255,255,0.98)';
-                navbar.style.boxShadow = '0 2px 20px rgba(0,0,0,0.1)';
-            } else {
-                navbar.style.background = 'rgba(255,255,255,0.95)';
-                navbar.style.boxShadow = '0 2px 20px rgba(0,0,0,0.1)';
-            }
-        });
+        // Show selected tab
+        document.getElementById(tabName).classList.add("active");
 
-        // Counter animation
-        const counters = document.querySelectorAll('.counter');
-        const speed = 200;
+        // Add active class to clicked button
+        event.target.classList.add("active");
 
-        const countUp = () => {
-            counters.forEach(counter => {
-                const target = +counter.getAttribute('data-target');
-                const count = +counter.innerText;
-                const inc = target / speed;
+        // If switching to results, initialize charts
+        if (tabName === "results") {
+          setTimeout(initCharts, 100);
+        }
+      }
 
-                if (count < target) {
-                    counter.innerText = Math.ceil(count + inc);
-                    setTimeout(countUp, 10);
-                } else {
-                    counter.innerText = target;
-                }
-            });
-        };
-
-        // Trigger counter animation on scroll
-        const observerOptions = {
-            threshold: 0.5
-        };
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    countUp();
-                    observer.unobserve(entry.target);
-                }
-            });
-        }, observerOptions);
-
-        document.querySelectorAll('.stat-number, .impact-number').forEach(el => {
-            if (el.querySelector('.counter') || el.classList.contains('counter') || el.hasAttribute('data-target')) {
-                observer.observe(el);
-            }
-        });
-
-        // Tab switching
-        function switchTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-
-            // Remove active class from all tab buttons
-            document.querySelectorAll('.tab').forEach(btn => {
-                btn.classList.remove('active');
-            });
-
-            // Show selected tab
-            document.getElementById(tabName).classList.add('active');
-
-            // Add active class to clicked button
-            event.target.classList.add('active');
-
-            // If switching to results, initialize charts
-            if (tabName === 'results') {
-                setTimeout(initCharts, 100);
-            }
+      // Initialize charts
+      function initCharts() {
+        // Yield Chart
+        const yieldCtx = document.getElementById("yieldChart");
+        if (yieldCtx && !yieldCtx.chart) {
+          yieldCtx.chart = new Chart(yieldCtx, {
+            type: "bar",
+            data: {
+              labels: ["Soybean", "Pigeon Pea", "Maize", "Current Avg"],
+              datasets: [
+                {
+                  label: "Expected Yield (Quintal/Hectare)",
+                  data: [25, 22, 20, 15],
+                  backgroundColor: [
+                    "rgba(102, 126, 234, 0.8)",
+                    "rgba(118, 75, 162, 0.8)",
+                    "rgba(255, 140, 0, 0.8)",
+                    "rgba(128, 128, 128, 0.5)",
+                  ],
+                  borderColor: [
+                    "rgba(102, 126, 234, 1)",
+                    "rgba(118, 75, 162, 1)",
+                    "rgba(255, 140, 0, 1)",
+                    "rgba(128, 128, 128, 1)",
+                  ],
+                  borderWidth: 2,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: true,
+              plugins: {
+                legend: {
+                  display: false,
+                },
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  grid: {
+                    color: "rgba(0, 0, 0, 0.05)",
+                  },
+                },
+                x: {
+                  grid: {
+                    display: false,
+                  },
+                },
+              },
+            },
+          });
         }
 
-        // Form submission
-        document.getElementById('cropForm').addEventListener('submit', (e) => {
-            e.preventDefault();
+        // Profit Chart
+        const profitCtx = document.getElementById("profitChart");
+        if (profitCtx && !profitCtx.chart) {
+          profitCtx.chart = new Chart(profitCtx, {
+            type: "line",
+            data: {
+              labels: ["Month 1", "Month 2", "Month 3", "Month 4", "Harvest"],
+              datasets: [
+                {
+                  label: "Soybean",
+                  data: [-15000, -5000, 0, 15000, 45000],
+                  borderColor: "rgba(102, 126, 234, 1)",
+                  backgroundColor: "rgba(102, 126, 234, 0.1)",
+                  tension: 0.4,
+                  fill: true,
+                },
+                {
+                  label: "Pigeon Pea",
+                  data: [-12000, -3000, 0, 12000, 38000],
+                  borderColor: "rgba(118, 75, 162, 1)",
+                  backgroundColor: "rgba(118, 75, 162, 0.1)",
+                  tension: 0.4,
+                  fill: true,
+                },
+                {
+                  label: "Maize",
+                  data: [-10000, -2000, 5000, 15000, 35000],
+                  borderColor: "rgba(255, 140, 0, 1)",
+                  backgroundColor: "rgba(255, 140, 0, 0.1)",
+                  tension: 0.4,
+                  fill: true,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: true,
+              plugins: {
+                legend: {
+                  position: "bottom",
+                },
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  grid: {
+                    color: "rgba(0, 0, 0, 0.05)",
+                  },
+                  ticks: {
+                    callback: function (value) {
+                      return "₹" + value.toLocaleString();
+                    },
+                  },
+                },
+                x: {
+                  grid: {
+                    display: false,
+                  },
+                },
+              },
+            },
+          });
+        }
+      }
 
-            // Switch to analysis tab
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelectorAll('.tab').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            document.getElementById('analysis').classList.add('active');
-            document.querySelectorAll('.tab')[1].classList.add('active');
-
-            // Simulate analysis
-            setTimeout(() => {
-                // Switch to results tab
-                document.querySelectorAll('.tab-content').forEach(tab => {
-                    tab.classList.remove('active');
-                });
-                document.querySelectorAll('.tab').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                document.getElementById('results').classList.add('active');
-                document.querySelectorAll('.tab')[2].classList.add('active');
-
-                // Show notification
-                const notification = document.getElementById('notification');
-                notification.classList.add('show');
-                setTimeout(() => {
-                    notification.classList.remove('show');
-                }, 3000);
-
-                // Initialize charts
-                initCharts();
-            }, 2000);
+      // Add some interactive elements
+      document.querySelectorAll(".feature-card").forEach((card) => {
+        card.addEventListener("mouseenter", () => {
+          card.style.transform = "translateY(-10px) scale(1.02)";
         });
+        card.addEventListener("mouseleave", () => {
+          card.style.transform = "translateY(0) scale(1)";
+        });
+      });
 
-        // Initialize charts
-        function initCharts() {
-            // Yield Chart
-            const yieldCtx = document.getElementById('yieldChart');
-            if (yieldCtx && !yieldCtx.chart) {
-                yieldCtx.chart = new Chart(yieldCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: ['Soybean', 'Pigeon Pea', 'Maize', 'Current Avg'],
-                        datasets: [{
-                            label: 'Expected Yield (Quintal/Hectare)',
-                            data: [25, 22, 20, 15],
-                            backgroundColor: [
-                                'rgba(102, 126, 234, 0.8)',
-                                'rgba(118, 75, 162, 0.8)',
-                                'rgba(255, 140, 0, 0.8)',
-                                'rgba(128, 128, 128, 0.5)'
-                            ],
-                            borderColor: [
-                                'rgba(102, 126, 234, 1)',
-                                'rgba(118, 75, 162, 1)',
-                                'rgba(255, 140, 0, 1)',
-                                'rgba(128, 128, 128, 1)'
-                            ],
-                            borderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: true,
-                        plugins: {
-                            legend: {
-                                display: false
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: {
-                                    color: 'rgba(0, 0, 0, 0.05)'
-                                }
-                            },
-                            x: {
-                                grid: {
-                                    display: false
-                                }
-                            }
-                        }
-                    }
-                });
-            }
+      // Add parallax effect to hero section
+      window.addEventListener("scroll", () => {
+        const scrolled = window.pageYOffset;
+        const parallax = document.querySelector(".hero");
+        if (parallax) {
+          parallax.style.transform = `translateY(${scrolled * 0.5}px)`;
+        }
+      });
 
-            // Profit Chart
-            const profitCtx = document.getElementById('profitChart');
-            if (profitCtx && !profitCtx.chart) {
-                profitCtx.chart = new Chart(profitCtx, {
-                    type: 'line',
-                    data: {
-                        labels: ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Harvest'],
-                        datasets: [{
-                            label: 'Soybean',
-                            data: [-15000, -5000, 0, 15000, 45000],
-                            borderColor: 'rgba(102, 126, 234, 1)',
-                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        }, {
-                            label: 'Pigeon Pea',
-                            data: [-12000, -3000, 0, 12000, 38000],
-                            borderColor: 'rgba(118, 75, 162, 1)',
-                            backgroundColor: 'rgba(118, 75, 162, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        }, {
-                            label: 'Maize',
-                            data: [-10000, -2000, 5000, 15000, 35000],
-                            borderColor: 'rgba(255, 140, 0, 1)',
-                            backgroundColor: 'rgba(255, 140, 0, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: true,
-                        plugins: {
-                            legend: {
-                                position: 'bottom'
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: {
-                                    color: 'rgba(0, 0, 0, 0.05)'
-                                },
-                                ticks: {
-                                    callback: function(value) {
-                                        return '₹' + value.toLocaleString();
-                                    }
-                                }
-                            },
-                            x: {
-                                grid: {
-                                    display: false
-                                }
-                            }
-                        }
-                    }
-                });
-            }
+      // Login/Logout Functionality
+      let isLoggedIn = sessionStorage.getItem("isLoggedIn") === "true";
+      let currentUser = JSON.parse(
+        sessionStorage.getItem("currentUser") || "{}"
+      );
+      let isSignupMode = false;
+
+      // Check login status on page load
+      window.addEventListener("DOMContentLoaded", () => {
+        updateNavigation();
+      });
+
+      function updateNavigation() {
+        const userSection = document.getElementById("userSection");
+        const profileNavItem = document.getElementById("profileNavItem");
+        const dropdown = document.getElementById("userDropdown");
+
+        if (isLoggedIn && currentUser.name) {
+          // Show profile in navbar
+          profileNavItem.style.display = "block";
+
+          // Create user profile section
+          userSection.innerHTML = `
+                    <div class="user-profile" onclick="toggleDropdown()">
+                        <div class="user-avatar">${currentUser.name
+                          .charAt(0)
+                          .toUpperCase()}</div>
+                        <span class="user-name">${currentUser.name}</span>
+                        <span style="color: #999; font-size: 0.8rem;">▼</span>
+                    </div>
+                `;
+
+          // Position dropdown relative to user section
+          if (dropdown) {
+            dropdown.style.position = "fixed";
+            dropdown.style.top = "70px";
+            dropdown.style.right = "2rem";
+          }
+
+          // Update dropdown info
+          document.getElementById("dropdownUsername").textContent =
+            currentUser.name;
+          document.getElementById("dropdownEmail").textContent =
+            currentUser.email || "farmer@smartcrop.com";
+          document.getElementById("dropdownAvatar").textContent =
+            currentUser.name.charAt(0).toUpperCase();
+        } else {
+          profileNavItem.style.display = "none";
+          userSection.innerHTML = `
+                    <a href="#" class="demo-btn" onclick="showLogin(); return false;">Login / Register</a>
+                `;
+        }
+      }
+
+      function showLogin() {
+        document.getElementById("loginModal").classList.add("show");
+        document.body.style.overflow = "hidden";
+        isSignupMode = false;
+        updateModalContent();
+      }
+
+      function closeLogin() {
+        document.getElementById("loginModal").classList.remove("show");
+        document.body.style.overflow = "auto";
+      }
+
+      function toggleForm() {
+        isSignupMode = !isSignupMode;
+        updateModalContent();
+      }
+
+      function updateModalContent() {
+        const modalTitle = document.getElementById("modalTitle");
+        const modalSubtitle = document.getElementById("modalSubtitle");
+        const submitBtn = document.getElementById("submitBtn");
+        const switchText = document.getElementById("switchText");
+        const switchLink = document.getElementById("switchLink");
+
+        if (isSignupMode) {
+          modalTitle.textContent = "Join Us Today!";
+          modalSubtitle.textContent =
+            "Create your account to get personalized farming insights";
+          submitBtn.textContent = "Sign Up";
+          switchText.textContent = "Already have an account?";
+          switchLink.textContent = "Login";
+        } else {
+          modalTitle.textContent = "Welcome Back!";
+          modalSubtitle.textContent =
+            "Login to access your personalized crop recommendations";
+          submitBtn.textContent = "Login";
+          switchText.textContent = "Don't have an account?";
+          switchLink.textContent = "Sign Up";
+        }
+      }
+
+      function handleLogin(event) {
+        event.preventDefault();
+
+        const username = document.getElementById("usernameInput").value;
+        const password = document.getElementById("passwordInput").value;
+
+        // Simulate authentication (accept any credentials for demo)
+        if (username && password) {
+          // Set user data
+          currentUser = {
+            name: username.charAt(0).toUpperCase() + username.slice(1),
+            email: username.includes("@")
+              ? username
+              : username + "@smartcrop.com",
+            role: "Farmer",
+            location: "Maharashtra",
+          };
+
+          // Save to sessionStorage
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("currentUser", JSON.stringify(currentUser));
+          isLoggedIn = true;
+
+          // Show success notification
+          showNotification(
+            isSignupMode
+              ? "✅ Account created successfully!"
+              : "✅ Login successful!"
+          );
+
+          // Update UI
+          closeLogin();
+          updateNavigation();
+
+          // Reset form
+          document.getElementById("loginForm").reset();
+        }
+      }
+
+      function handleSocialLogin(provider) {
+        // Simulate social login
+        currentUser = {
+          name: provider === "google" ? "Google User" : "Phone User",
+          email: provider === "google" ? "user@gmail.com" : "+91-9876543210",
+          role: "Farmer",
+          location: "Maharashtra",
+        };
+
+        sessionStorage.setItem("isLoggedIn", "true");
+        sessionStorage.setItem("currentUser", JSON.stringify(currentUser));
+        isLoggedIn = true;
+
+        showNotification(
+          `✅ Logged in with ${provider === "google" ? "Google" : "Phone"}!`
+        );
+        closeLogin();
+        updateNavigation();
+      }
+
+      function toggleDropdown() {
+        const dropdown = document.getElementById("userDropdown");
+        dropdown.classList.toggle("show");
+      }
+
+      // Close dropdown when clicking outside
+      document.addEventListener("click", (e) => {
+        const dropdown = document.getElementById("userDropdown");
+        const userProfile = document.querySelector(".user-profile");
+
+        if (
+          dropdown &&
+          userProfile &&
+          !userProfile.contains(e.target) &&
+          !dropdown.contains(e.target)
+        ) {
+          dropdown.classList.remove("show");
+        }
+      });
+
+      function handleLogout() {
+        // Clear session
+        sessionStorage.removeItem("isLoggedIn");
+        sessionStorage.removeItem("currentUser");
+        isLoggedIn = false;
+        currentUser = {};
+
+        // Hide dropdown
+        document.getElementById("userDropdown").classList.remove("show");
+
+        // Update UI
+        updateNavigation();
+        showNotification("👋 Logged out successfully!");
+      }
+
+      function showProfile() {
+        const profileInfo = `
+                👤 Profile Information
+                ━━━━━━━━━━━━━━━
+                Name: ${currentUser.name}
+                Email: ${currentUser.email}
+                Role: ${currentUser.role}
+                Location: ${currentUser.location}
+            `;
+        alert(profileInfo);
+        document.getElementById("userDropdown").classList.remove("show");
+      }
+
+      function showDashboard() {
+        showNotification("📊 Loading your dashboard...");
+        document.getElementById("userDropdown").classList.remove("show");
+        // Scroll to demo section
+        document.getElementById("demo").scrollIntoView({ behavior: "smooth" });
+      }
+
+      function showHistory() {
+        showNotification("📜 Loading crop history...");
+        document.getElementById("userDropdown").classList.remove("show");
+      }
+
+      function showSettings() {
+        showNotification("⚙️ Opening settings...");
+        document.getElementById("userDropdown").classList.remove("show");
+      }
+
+      function showNotification(message) {
+        const notification = document.getElementById("notification");
+        notification.textContent = message;
+        notification.classList.add("show");
+        setTimeout(() => {
+          notification.classList.remove("show");
+        }, 3000);
+      }
+
+      // Form submission handler
+      document.getElementById("cropForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        if (!isLoggedIn) {
+          showNotification("⚠️ Please login to get recommendations");
+          showLogin();
+          return;
         }
 
-        // Add some interactive elements
-        document.querySelectorAll('.feature-card').forEach(card => {
-            card.addEventListener('mouseenter', () => {
-                card.style.transform = 'translateY(-10px) scale(1.02)';
-            });
-            card.addEventListener('mouseleave', () => {
-                card.style.transform = 'translateY(0) scale(1)';
-            });
+        // Switch to analysis tab
+        document.querySelectorAll(".tab-content").forEach((tab) => {
+          tab.classList.remove("active");
+        });
+        document.querySelectorAll(".tab").forEach((btn) => {
+          btn.classList.remove("active");
+        });
+        document.getElementById("analysis").classList.add("active");
+        document.querySelectorAll(".tab")[1].classList.add("active");
+
+        // Simulate analysis
+        setTimeout(() => {
+          // Switch to results tab
+          document.querySelectorAll(".tab-content").forEach((tab) => {
+            tab.classList.remove("active");
+          });
+          document.querySelectorAll(".tab").forEach((btn) => {
+            btn.classList.remove("active");
+          });
+          document.getElementById("results").classList.add("active");
+          document.querySelectorAll(".tab")[2].classList.add("active");
+
+          // Show notification
+          showNotification("✅ Recommendations Generated Successfully!");
+
+          // Initialize charts
+          initCharts();
+        }, 2000);
+      });
+
+      // Auto-fill demo credentials hint
+      document
+        .getElementById("usernameInput")
+        ?.addEventListener("focus", function () {
+          this.placeholder = "Try: demo_farmer or any name";
         });
 
-        // Mobile menu toggle (you can add a hamburger menu here)
-
-        // Add parallax effect to hero section
-        window.addEventListener('scroll', () => {
-            const scrolled = window.pageYOffset;
-            const parallax = document.querySelector('.hero');
-            parallax.style.transform = `translateY(${scrolled * 0.5}px)`;
+      document
+        .getElementById("passwordInput")
+        ?.addEventListener("focus", function () {
+          this.placeholder = "Any password (demo mode)";
         });
 
-        console.log('🌾 Smart Crop Advisory System Loaded Successfully!');
-        console.log('📧 Contact us for deployment assistance');
+      console.log("🌾 Smart Crop Advisory System Loaded Successfully!");
+      console.log("📧 Contact us for deployment assistance");
     </script>
-</body>
-</html>            <div class="crop-icon">🌱</div>
-                            <div class="crop-name">Soybean</div>
-                            <div class="crop-profit">₹45,000/hectare</div>
-                            <div class="crop-details">
-                                <p>Duration: 90-100 days</p>
-                                <p>Best Match: 95%</p>
-                            </div>
-                        </div>
-                        <div class="crop-card">
+  </body>
+</html>
