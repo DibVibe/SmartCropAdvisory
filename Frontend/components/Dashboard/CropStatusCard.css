@@ -1,0 +1,240 @@
+.crop-status-card {
+  padding: 20px;
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--border-primary);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.card-header h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 20px;
+}
+
+.field-selector {
+  padding: 6px 12px;
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  font-size: 14px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.field-selector:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.loading-placeholder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--bg-tertiary);
+  border-top: 3px solid var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.crop-info {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.crop-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.crop-name h4 {
+  margin: 0 0 5px 0;
+  color: var(--text-primary);
+  font-size: 18px;
+}
+
+.crop-stage {
+  color: var(--text-secondary);
+  font-size: 14px;
+  background: var(--bg-tertiary);
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.health-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.health-status.success {
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--accent-primary);
+}
+
+.health-status.info {
+  background: rgba(59, 130, 246, 0.2);
+  color: var(--accent-info);
+}
+
+.health-status.warning {
+  background: rgba(245, 158, 11, 0.2);
+  color: var(--accent-warning);
+}
+
+.health-status.danger {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--accent-error);
+}
+
+.crop-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.metric {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.metric-icon {
+  color: var(--text-secondary);
+  min-width: 20px;
+}
+
+.metric-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-width: 140px;
+}
+
+.metric-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.metric-value {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.metric-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-left: 15px;
+}
+
+.metric-fill {
+  height: 100%;
+  background: var(--accent-primary);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.metric-bar.warning .metric-fill {
+  background: var(--accent-warning);
+}
+
+.metric-bar.info .metric-fill {
+  background: var(--accent-info);
+}
+
+.metric-bar.success .metric-fill {
+  background: var(--accent-primary);
+}
+
+.crop-issues,
+.crop-recommendations {
+  background: var(--bg-tertiary);
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid var(--border-primary);
+}
+
+.crop-issues h5,
+.crop-recommendations h5 {
+  margin: 0 0 10px 0;
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.crop-issues ul,
+.crop-recommendations ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.issue-item,
+.recommendation-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.issue-item svg {
+  color: var(--accent-warning);
+}
+
+.recommendation-item svg {
+  color: var(--accent-primary);
+}
+
+.crop-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 15px;
+  border-top: 1px solid var(--border-primary);
+}
+
+.planted-date {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.view-details-btn {
+  background: var(--accent-primary);
+  color: var(--text-primary);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.3s ease;
+}
+
+.view-details-btn:hover {
+  background: var(--accent-tertiary);
+}

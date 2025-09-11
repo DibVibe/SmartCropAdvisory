@@ -1,0 +1,252 @@
+/* Loading Spinner Styles */
+.loading-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  z-index: 2;
+  text-align: center;
+}
+
+.loading-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logo-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  background: var(--gradient-primary);
+  border-radius: 20px;
+  font-size: 2.5rem;
+  box-shadow: var(--shadow-lg);
+}
+
+.loading-text h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.loading-text p {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  margin: 0.5rem 0 0 0;
+  line-height: 1.4;
+}
+
+/* Spinner Animation */
+.loading-spinner {
+  position: relative;
+}
+
+.spinner-ring {
+  display: inline-block;
+  position: relative;
+  width: 60px;
+  height: 60px;
+}
+
+.spinner-ring div {
+  box-sizing: border-box;
+  display: block;
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  margin: 6px;
+  border: 3px solid transparent;
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: spinner-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+
+.spinner-ring div:nth-child(1) {
+  animation-delay: -0.45s;
+}
+
+.spinner-ring div:nth-child(2) {
+  animation-delay: -0.3s;
+}
+
+.spinner-ring div:nth-child(3) {
+  animation-delay: -0.15s;
+}
+
+@keyframes spinner-ring {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Progress Bar */
+.loading-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  width: 280px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: var(--bg-tertiary);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--gradient-primary);
+  border-radius: 2px;
+  animation: progress-fill 2s ease-in-out infinite;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+@keyframes progress-fill {
+  0% {
+    width: 0%;
+  }
+  50% {
+    width: 70%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+.progress-text {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  animation: progress-text 3s ease-in-out infinite;
+}
+
+@keyframes progress-text {
+  0%, 50% {
+    opacity: 0.7;
+  }
+  25%, 75% {
+    opacity: 1;
+  }
+}
+
+/* Loading Background Effects */
+.loading-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.loading-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.4;
+  animation: loading-float 8s ease-in-out infinite;
+}
+
+.loading-orb.orb-1 {
+  width: 300px;
+  height: 300px;
+  background: linear-gradient(45deg, rgba(16, 185, 129, 0.4), rgba(52, 211, 153, 0.3));
+  top: 10%;
+  left: -10%;
+  animation-delay: 0s;
+}
+
+.loading-orb.orb-2 {
+  width: 200px;
+  height: 200px;
+  background: linear-gradient(45deg, rgba(59, 130, 246, 0.3), rgba(147, 197, 253, 0.2));
+  top: 60%;
+  right: -5%;
+  animation-delay: 3s;
+}
+
+.loading-orb.orb-3 {
+  width: 150px;
+  height: 150px;
+  background: linear-gradient(45deg, rgba(245, 158, 11, 0.3), rgba(251, 191, 36, 0.2));
+  bottom: 20%;
+  left: 50%;
+  animation-delay: 6s;
+}
+
+@keyframes loading-float {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px) scale(1);
+  }
+  33% {
+    transform: translateY(-30px) translateX(20px) scale(1.1);
+  }
+  66% {
+    transform: translateY(20px) translateX(-15px) scale(0.9);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .loading-text h2 {
+    font-size: 1.5rem;
+  }
+  
+  .loading-text p {
+    font-size: 0.875rem;
+  }
+  
+  .logo-icon {
+    width: 60px;
+    height: 60px;
+    font-size: 2rem;
+  }
+  
+  .loading-progress {
+    width: 240px;
+  }
+  
+  .loading-orb {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .loading-content {
+    gap: 1.5rem;
+    padding: 0 1rem;
+  }
+  
+  .loading-text h2 {
+    font-size: 1.25rem;
+  }
+  
+  .loading-progress {
+    width: 200px;
+  }
+}

@@ -1,0 +1,148 @@
+/* App Layout */
+.app {
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.app-body {
+  display: flex;
+  min-height: calc(100vh - 70px);
+  position: relative;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 0;
+  transition: margin-left var(--transition-normal);
+  position: relative;
+  z-index: 1;
+}
+
+.main-content.sidebar-open {
+  margin-left: 280px;
+}
+
+.main-content-inner {
+  padding: 2rem;
+  min-height: calc(100vh - 70px);
+  max-width: 1400px;
+  margin: 0 auto;
+  background: var(--bg-primary);
+}
+
+/* Background Effects */
+.bg-effects {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.floating-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.6;
+  animation: float 6s ease-in-out infinite;
+}
+
+.orb-1 {
+  width: 200px;
+  height: 200px;
+  background: linear-gradient(45deg, rgba(16, 185, 129, 0.3), rgba(52, 211, 153, 0.2));
+  top: 20%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.orb-2 {
+  width: 150px;
+  height: 150px;
+  background: linear-gradient(45deg, rgba(59, 130, 246, 0.2), rgba(147, 197, 253, 0.1));
+  top: 60%;
+  right: 15%;
+  animation-delay: 2s;
+}
+
+.orb-3 {
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(45deg, rgba(245, 158, 11, 0.2), rgba(251, 191, 36, 0.1));
+  bottom: 30%;
+  left: 60%;
+  animation-delay: 4s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-20px) scale(1.05);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .main-content-inner {
+    padding: 1rem;
+  }
+  
+  .main-content.sidebar-open {
+    margin-left: 0;
+  }
+  
+  .floating-orb {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .main-content-inner {
+    padding: 0.75rem;
+  }
+}
+
+/* Page Transitions */
+.page-enter {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.page-exit {
+  opacity: 1;
+}
+
+.page-exit-active {
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: opacity 300ms, transform 300ms;
+}
+
+/* Custom Scrollbar for main content */
+.main-content-inner::-webkit-scrollbar {
+  width: 6px;
+}
+
+.main-content-inner::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.main-content-inner::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: 3px;
+}
+
+.main-content-inner::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary);
+}
