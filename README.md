@@ -592,8 +592,6 @@ curl http://127.0.0.1:8000/api/weather/current/?lat=28.6139&lon=77.2090
 
 ---
 
-<div align="center">
-
 ## 🎯 **Quick Verification Checklist**
 
 ```bash
@@ -613,8 +611,6 @@ ls Backend/Scripts/Models/*.pkl Backend/Scripts/Models/*.h5
 curl http://localhost:3000
 # Expected: HTML content
 ```
-
-</div>
 
 ---
 
