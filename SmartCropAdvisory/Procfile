@@ -1,1 +1,0 @@
-web: gunicorn smart_crop.wsgi --log-file -
