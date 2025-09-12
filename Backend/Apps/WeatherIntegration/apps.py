@@ -1,6 +1,7 @@
 from django.apps import AppConfig
 
 
-class WeatherintegrationConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'WeatherIntegration'
+class WeatherIntegrationConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "Apps.WeatherIntegration"
+    verbose_name = "Weather Integration"

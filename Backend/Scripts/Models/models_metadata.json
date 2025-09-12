@@ -1,0 +1,35 @@
+{
+  "disease_model": {
+    "filename": "disease_model.h5",
+    "type": "CNN",
+    "framework": "TensorFlow/Keras",
+    "input_shape": [224, 224, 3],
+    "num_classes": 38,
+    "accuracy": 0.973,
+    "training_date": "2025-09-12",
+    "dataset": "PlantVillage + Synthetic",
+    "description": "Convolutional Neural Network for plant disease detection"
+  },
+  "yield_model": {
+    "filename": "yield_model.pkl",
+    "type": "Random Forest",
+    "framework": "scikit-learn",
+    "features": 19,
+    "r2_score": 0.89,
+    "rmse": 1.23,
+    "training_date": "2025-09-12",
+    "dataset": "Synthetic Agricultural Data",
+    "description": "Ensemble model for crop yield prediction"
+  },
+  "crop_recommender": {
+    "filename": "crop_recommender.pkl",
+    "type": "Random Forest Classifier",
+    "framework": "scikit-learn",
+    "features": 11,
+    "accuracy": 0.925,
+    "num_classes": 10,
+    "training_date": "2025-09-12",
+    "dataset": "Synthetic Soil & Climate Data",
+    "description": "Classification model for crop recommendation"
+  }
+}

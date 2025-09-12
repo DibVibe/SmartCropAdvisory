@@ -1,6 +1,10 @@
 from django.apps import AppConfig
 
 
-class UsermanagementConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'UserManagement'
+class UserManagementConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "Apps.UserManagement"
+    verbose_name = "User Management"
+
+    def ready(self):
+        import Apps.UserManagement.signals

@@ -1,0 +1,2110 @@
+{
+  "info": {
+    "name": "SmartCropAdvisory API - Complete Collection v2.1",
+    "description": "🌾 Comprehensive API collection for SmartCropAdvisory AI-powered agricultural intelligence system with homepage, system monitoring, and all agricultural services",
+    "version": "2.1.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{auth_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// System validation before requests",
+          "console.log('🚀 Executing request to:', pm.request.url);",
+          "console.log('🔐 Auth token present:', pm.collectionVariables.get('auth_token') ? 'Yes' : 'No');",
+          "console.log('📅 Request timestamp:', new Date().toISOString());"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global response validation",
+          "pm.test('⚡ Response time is acceptable', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "pm.test('📋 Response has valid structure', function () {",
+          "    if (pm.response.headers.get('Content-Type') && pm.response.headers.get('Content-Type').includes('application/json')) {",
+          "        pm.response.to.have.jsonBody();",
+          "    }",
+          "});",
+          "",
+          "pm.test('🔒 Security headers present', function () {",
+          "    pm.expect(pm.response.headers.has('X-Frame-Options')).to.be.true;",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000",
+      "type": "string",
+      "description": "Base URL for SmartCropAdvisory API"
+    },
+    {
+      "key": "api_base_url",
+      "value": "{{base_url}}/api",
+      "type": "string",
+      "description": "API Base URL"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string",
+      "description": "JWT Authentication Token"
+    },
+    {
+      "key": "test_user_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "test_farm_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "test_field_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "api_version",
+      "value": "v1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "00_Homepage_Root_Endpoints",
+      "description": "🏠 Homepage and root system endpoints",
+      "item": [
+        {
+          "name": "Homepage",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Homepage loads successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is HTML', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('text/html');",
+                  "});",
+                  "",
+                  "pm.test('Page contains SmartCropAdvisory branding', function () {",
+                  "    pm.expect(pm.response.text()).to.include('SmartCropAdvisory');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": [""]
+            },
+            "description": "🏠 Main homepage with agricultural intelligence dashboard"
+          }
+        },
+        {
+          "name": "API Overview",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('API Overview successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response contains API information', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('name');",
+                  "    pm.expect(responseJson).to.have.property('version');",
+                  "    pm.expect(responseJson).to.have.property('endpoints');",
+                  "});",
+                  "",
+                  "pm.test('All main endpoints are listed', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.endpoints).to.have.property('crop_analysis');",
+                  "    pm.expect(responseJson.endpoints).to.have.property('weather');",
+                  "    pm.expect(responseJson.endpoints).to.have.property('irrigation');",
+                  "    pm.expect(responseJson.endpoints).to.have.property('market');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{api_base_url}}/",
+              "host": ["{{api_base_url}}"],
+              "path": [""]
+            },
+            "description": "📊 Complete API overview with all available endpoints and documentation links"
+          }
+        },
+        {
+          "name": "Favicon",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/favicon.ico",
+              "host": ["{{base_url}}"],
+              "path": ["favicon.ico"]
+            },
+            "description": "🎨 Website favicon"
+          }
+        },
+        {
+          "name": "Robots.txt",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/robots.txt",
+              "host": ["{{base_url}}"],
+              "path": ["robots.txt"]
+            },
+            "description": "🤖 Search engine crawler instructions"
+          }
+        }
+      ]
+    },
+    {
+      "name": "01_API_Documentation",
+      "description": "📚 API Documentation and Schema endpoints",
+      "item": [
+        {
+          "name": "OpenAPI Schema",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Schema endpoint responds', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Schema is valid OpenAPI format', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('openapi');",
+                  "    pm.expect(responseJson).to.have.property('info');",
+                  "    pm.expect(responseJson).to.have.property('paths');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.oai.openapi"
+              }
+            ],
+            "url": {
+              "raw": "{{api_base_url}}/schema/",
+              "host": ["{{api_base_url}}"],
+              "path": ["schema", ""]
+            },
+            "description": "📋 OpenAPI 3.0 schema specification"
+          }
+        },
+        {
+          "name": "Swagger UI Documentation",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": {
+              "raw": "{{api_base_url}}/docs/",
+              "host": ["{{api_base_url}}"],
+              "path": ["docs", ""]
+            },
+            "description": "📖 Interactive Swagger UI documentation"
+          }
+        },
+        {
+          "name": "ReDoc Documentation",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": {
+              "raw": "{{api_base_url}}/redoc/",
+              "host": ["{{api_base_url}}"],
+              "path": ["redoc", ""]
+            },
+            "description": "📚 Beautiful ReDoc API documentation"
+          }
+        }
+      ]
+    },
+    {
+      "name": "02_System_Health_Status",
+      "description": "🏥 System health monitoring and status checks",
+      "item": [
+        {
+          "name": "Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('🏥 System is healthy', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Health response structure', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('DatabaseBackend');",
+                  "    pm.expect(responseJson).to.have.property('CacheBackend');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/health/",
+              "host": ["{{api_base_url}}"],
+              "path": ["health", ""]
+            },
+            "description": "🩺 Complete system health check including database, cache, and external services"
+          }
+        },
+        {
+          "name": "Database Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/health/?format=json",
+              "host": ["{{api_base_url}}"],
+              "path": ["health", ""],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "json"
+                }
+              ]
+            },
+            "description": "💾 Database connection and performance check"
+          }
+        },
+        {
+          "name": "System Status Overview",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status endpoint responds', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Status contains system info', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('system');",
+                  "    pm.expect(responseJson).to.have.property('database');",
+                  "    pm.expect(responseJson).to.have.property('cache');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/status/status/",
+              "host": ["{{api_base_url}}"],
+              "path": ["status", "status", ""]
+            },
+            "description": "📊 Detailed system status with performance metrics"
+          }
+        },
+        {
+          "name": "System Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/status/stats/",
+              "host": ["{{api_base_url}}"],
+              "path": ["status", "stats", ""]
+            },
+            "description": "📈 System usage statistics and analytics"
+          }
+        },
+        {
+          "name": "Health Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/status/health/details/",
+              "host": ["{{api_base_url}}"],
+              "path": ["status", "health", "details", ""]
+            },
+            "description": "🔍 Detailed health information for all system components"
+          }
+        }
+      ]
+    },
+    {
+      "name": "03_Authentication_Users",
+      "description": "🔐 User authentication and management",
+      "item": [
+        {
+          "name": "Register User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('✅ User registration successful', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response contains user data', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('user');",
+                  "    if (responseJson.user && responseJson.user.id) {",
+                  "        pm.collectionVariables.set('test_user_id', responseJson.user.id);",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('User has required fields', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.user).to.have.property('username');",
+                  "    pm.expect(responseJson.user).to.have.property('email');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"smartfarmer_{{$randomInt}}\",\n    \"email\": \"farmer{{$randomInt}}@smartcrop.com\",\n    \"password\": \"SecurePass123!\",\n    \"password_confirm\": \"SecurePass123!\",\n    \"first_name\": \"Test\",\n    \"last_name\": \"Farmer\",\n    \"phone_number\": \"+91{{$randomPhoneNumber}}\"\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/users/register/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "users", "register", ""]
+            },
+            "description": "👤 Register new user with profile information"
+          }
+        },
+        {
+          "name": "Login User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('🔓 Login successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response contains authentication tokens', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    if (responseJson.access) {",
+                  "        pm.collectionVariables.set('auth_token', responseJson.access);",
+                  "        console.log('✅ JWT Token saved to collection variables');",
+                  "    } else if (responseJson.token) {",
+                  "        pm.collectionVariables.set('auth_token', responseJson.token);",
+                  "        console.log('✅ Auth Token saved to collection variables');",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('User information returned', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('user');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"testuser\",\n    \"password\": \"SecurePass123!\"\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/users/login/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "users", "login", ""]
+            },
+            "description": "🔑 User login with JWT token generation"
+          }
+        },
+        {
+          "name": "Logout User",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/users/logout/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "users", "logout", ""]
+            },
+            "description": "🚪 User logout and token invalidation"
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"old_password\": \"SecurePass123!\",\n    \"new_password\": \"NewSecurePass456!\",\n    \"confirm_password\": \"NewSecurePass456!\"\n}"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/users/change-password/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "users", "change-password", ""]
+            },
+            "description": "🔐 Change user password with validation"
+          }
+        },
+        {
+          "name": "Get User Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Profile retrieved successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Profile contains user information', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('user');",
+                  "    pm.expect(responseJson).to.have.property('farm_details');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/users/profiles/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "users", "profiles", ""]
+            },
+            "description": "👤 Get current user profile with farming details"
+          }
+        },
+        {
+          "name": "Update User Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"phone_number\": \"+919876543210\",\n    \"date_of_birth\": \"1985-05-15\",\n    \"gender\": \"male\",\n    \"address_line1\": \"123 Agricultural Road\",\n    \"village\": \"Smartville\",\n    \"district\": \"Barddhaman\",\n    \"state\": \"West Bengal\",\n    \"pincode\": \"713201\",\n    \"farm_size\": 7.5,\n    \"farming_experience\": 15,\n    \"education_level\": \"graduate\",\n    \"preferred_language\": \"en\"\n}"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/users/profiles/{{test_user_id}}/",
+              "host": ["{{api_base_url}}"],
+              "path": [
+                "{{api_version}}",
+                "users",
+                "profiles",
+                "{{test_user_id}}",
+                ""
+              ]
+            },
+            "description": "✏️ Update user profile and farming information"
+          }
+        },
+        {
+          "name": "Get User Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/users/dashboard/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "users", "dashboard", ""]
+            },
+            "description": "📊 User dashboard with farming statistics and insights"
+          }
+        },
+        {
+          "name": "Get User Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/users/statistics/?days=30",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "users", "statistics", ""],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "30"
+                }
+              ]
+            },
+            "description": "📈 User activity statistics and usage analytics"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04_Advisory_Services",
+      "description": "🎯 Farm advisory and recommendation services",
+      "item": [
+        {
+          "name": "List Farms",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/advisory/farms/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "advisory", "farms", ""]
+            },
+            "description": "🏡 Get list of user's registered farms"
+          }
+        },
+        {
+          "name": "Create Farm",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.collectionVariables.set('test_farm_id', responseJson.id);",
+                  "    console.log('✅ Farm created with ID:', responseJson.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"SmartCrop Demo Farm\",\n    \"latitude\": 23.2325,\n    \"longitude\": 87.8615,\n    \"total_area\": 12.5,\n    \"cultivated_area\": 10.0,\n    \"district\": \"Barddhaman\",\n    \"state\": \"West Bengal\",\n    \"soil_type\": \"loamy\",\n    \"irrigation_source\": \"bore_well\",\n    \"farming_type\": \"organic\"\n}"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/advisory/farms/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "advisory", "farms", ""]
+            },
+            "description": "➕ Register new farm with location and characteristics"
+          }
+        },
+        {
+          "name": "Get Farm Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/advisory/farms/{{test_farm_id}}/",
+              "host": ["{{api_base_url}}"],
+              "path": [
+                "{{api_version}}",
+                "advisory",
+                "farms",
+                "{{test_farm_id}}",
+                ""
+              ]
+            },
+            "description": "🏪 Comprehensive farm dashboard with all metrics"
+          }
+        },
+        {
+          "name": "Get Comprehensive Advisory",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Advisory generated successfully', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Advisory contains recommendations', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('recommendations');",
+                  "    pm.expect(responseJson).to.have.property('crop_suggestions');",
+                  "    pm.expect(responseJson).to.have.property('weather_analysis');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"session_type\": \"comprehensive\",\n    \"soil_analysis\": {\n        \"ph\": 6.5,\n        \"nitrogen\": 280,\n        \"phosphorus\": 25,\n        \"potassium\": 185,\n        \"organic_carbon\": 0.85,\n        \"moisture\": 45\n    },\n    \"weather_preferences\": {\n        \"include_forecast\": true,\n        \"forecast_days\": 14\n    },\n    \"market_preferences\": {\n        \"include_prices\": true,\n        \"nearby_markets\": true,\n        \"price_trends\": true\n    },\n    \"crop_preferences\": {\n        \"current_season\": \"kharif\",\n        \"preferred_crops\": [\"rice\", \"sugarcane\", \"cotton\"]\n    }\n}"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/advisory/sessions/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "advisory", "sessions", ""]
+            },
+            "description": "🎯 Get comprehensive agricultural advisory with AI recommendations"
+          }
+        },
+        {
+          "name": "Get Advisory Alerts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/advisory/alerts/?priority=high&active_only=true",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "advisory", "alerts", ""],
+              "query": [
+                {
+                  "key": "priority",
+                  "value": "high"
+                },
+                {
+                  "key": "active_only",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "🚨 Get real-time agricultural alerts and warnings"
+          }
+        },
+        {
+          "name": "Quick Soil-Based Recommendation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"soil_data\": {\n        \"ph\": 6.5,\n        \"nitrogen\": 280,\n        \"phosphorus\": 20,\n        \"potassium\": 180,\n        \"organic_matter\": 2.5\n    },\n    \"location\": {\n        \"latitude\": 23.2325,\n        \"longitude\": 87.8615\n    },\n    \"season\": \"kharif\",\n    \"farm_size\": 5.0\n}"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/advisory/sessions/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "advisory", "sessions", ""]
+            },
+            "description": "⚡ Quick crop and fertilizer recommendations based on soil analysis"
+          }
+        }
+      ]
+    },
+    {
+      "name": "05_Crop_Analysis_ML",
+      "description": "🌱 AI-powered crop analysis and disease detection",
+      "item": [
+        {
+          "name": "List Available Crops",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/crop/?category=cereals&season=kharif&page_size=50",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "crop", ""],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "cereals"
+                },
+                {
+                  "key": "season",
+                  "value": "kharif"
+                },
+                {
+                  "key": "page_size",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "📋 Get comprehensive list of supported crops with details"
+          }
+        },
+        {
+          "name": "Get Suitable Crops for Conditions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/crop/crops/suitable/?temperature=28&rainfall=1200&ph=6.5&soil_type=loamy",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "crop", "crops", "suitable", ""],
+              "query": [
+                {
+                  "key": "temperature",
+                  "value": "28"
+                },
+                {
+                  "key": "rainfall",
+                  "value": "1200"
+                },
+                {
+                  "key": "ph",
+                  "value": "6.5"
+                },
+                {
+                  "key": "soil_type",
+                  "value": "loamy"
+                }
+              ]
+            },
+            "description": "🎯 Find crops suitable for specific environmental conditions"
+          }
+        },
+        {
+          "name": "AI Disease Detection",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Disease detection completed', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Detection results contain predictions', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('predictions');",
+                  "    pm.expect(responseJson).to.have.property('confidence_score');",
+                  "    pm.expect(responseJson).to.have.property('recommendations');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "",
+                  "description": "Plant/leaf image for disease detection"
+                },
+                {
+                  "key": "crop_id",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "location_lat",
+                  "value": "23.2325",
+                  "type": "text"
+                },
+                {
+                  "key": "location_lon",
+                  "value": "87.8615",
+                  "type": "text"
+                },
+                {
+                  "key": "growth_stage",
+                  "value": "flowering",
+                  "type": "text"
+                },
+                {
+                  "key": "symptoms_description",
+                  "value": "Yellow spots on leaves",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/crop/detect-disease/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "crop", "detect-disease", ""]
+            },
+            "description": "🔬 AI-powered plant disease detection using computer vision"
+          }
+        },
+        {
+          "name": "Get Disease Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/crop/disease-detections/statistics/?period=30&crop_id=1",
+              "host": ["{{api_base_url}}"],
+              "path": [
+                "{{api_version}}",
+                "crop",
+                "disease-detections",
+                "statistics",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "30"
+                },
+                {
+                  "key": "crop_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "📊 Disease detection statistics and trends"
+          }
+        },
+        {
+          "name": "Create Field",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.collectionVariables.set('test_field_id', responseJson.id);",
+                  "    console.log('✅ Field created with ID:', responseJson.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Smart Field Alpha\",\n    \"area\": 3.5,\n    \"soil_type\": \"loamy\",\n    \"location_lat\": 23.2325,\n    \"location_lon\": 87.8615,\n    \"current_crop\": 1,\n    \"planting_date\": \"2024-06-15\",\n    \"expected_harvest_date\": \"2024-10-15\",\n    \"irrigation_type\": \"drip\",\n    \"soil_analysis\": {\n        \"ph_level\": 6.5,\n        \"nitrogen_level\": 280,\n        \"phosphorus_level\": 25,\n        \"potassium_level\": 185,\n        \"organic_carbon\": 0.85,\n        \"electrical_conductivity\": 0.4\n    },\n    \"field_boundaries\": {\n        \"coordinates\": [\n            [87.8600, 23.2310],\n            [87.8630, 23.2310],\n            [87.8630, 23.2340],\n            [87.8600, 23.2340],\n            [87.8600, 23.2310]\n        ]\n    }\n}"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/crop/fields/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "crop", "fields", ""]
+            },
+            "description": "🏞️ Create new field with detailed soil and location data"
+          }
+        },
+        {
+          "name": "Analyze Field Comprehensively",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"analysis_type\": \"comprehensive\",\n    \"include_soil_health\": true,\n    \"include_pest_risk\": true,\n    \"include_yield_prediction\": true,\n    \"include_market_analysis\": true,\n    \"weather_integration\": true,\n    \"recommendation_depth\": \"detailed\"\n}"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/crop/fields/{{test_field_id}}/analyze/",
+              "host": ["{{api_base_url}}"],
+              "path": [
+                "{{api_version}}",
+                "crop",
+                "fields",
+                "{{test_field_id}}",
+                "analyze",
+                ""
+              ]
+            },
+            "description": "🔬 Comprehensive field analysis with AI recommendations"
+          }
+        },
+        {
+          "name": "Predict Crop Yield",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"field_id\": \"{{test_field_id}}\",\n    \"crop_id\": 1,\n    \"prediction_date\": \"2024-10-15\",\n    \"include_weather_forecast\": true,\n    \"include_market_factors\": true,\n    \"historical_data_years\": 5,\n    \"confidence_level\": 0.85\n}"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/crop/predict-yield/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "crop", "predict-yield", ""]
+            },
+            "description": "📈 AI-powered crop yield prediction with market insights"
+          }
+        },
+        {
+          "name": "Get Crop Recommendations",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"soil_conditions\": {\n        \"type\": \"loamy\",\n        \"ph_level\": 6.5,\n        \"nitrogen\": 280,\n        \"phosphorus\": 25,\n        \"potassium\": 185,\n        \"organic_matter\": 2.5\n    },\n    \"climate_data\": {\n        \"avg_temperature\": 28,\n        \"annual_rainfall\": 1200,\n        \"humidity\": 75\n    },\n    \"location\": {\n        \"latitude\": 23.2325,\n        \"longitude\": 87.8615\n    },\n    \"preferences\": {\n        \"season\": \"kharif\",\n        \"farming_type\": \"organic\",\n        \"market_focus\": \"local\",\n        \"risk_tolerance\": \"medium\"\n    },\n    \"include_market_analysis\": true,\n    \"max_recommendations\": 5\n}"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/crop/recommend-crops/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "crop", "recommend-crops", ""]
+            },
+            "description": "🎯 Get personalized crop recommendations based on conditions"
+          }
+        },
+        {
+          "name": "Get Farming Tips",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/crop/farming-tips/?crop_id=1&growth_stage=flowering&season=kharif",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "crop", "farming-tips", ""],
+              "query": [
+                {
+                  "key": "crop_id",
+                  "value": "1"
+                },
+                {
+                  "key": "growth_stage",
+                  "value": "flowering"
+                },
+                {
+                  "key": "season",
+                  "value": "kharif"
+                }
+              ]
+            },
+            "description": "💡 Get contextual farming tips and best practices"
+          }
+        },
+        {
+          "name": "Get Daily Farming Tip",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/crop/farming-tips/daily/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "crop", "farming-tips", "daily", ""]
+            },
+            "description": "📅 Get daily farming tip and agricultural wisdom"
+          }
+        }
+      ]
+    },
+    {
+      "name": "06_Weather_Intelligence",
+      "description": "🌤️ Advanced weather integration and climate analysis",
+      "item": [
+        {
+          "name": "Get Current Weather",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Weather data retrieved', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Weather contains required fields', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('temperature');",
+                  "    pm.expect(responseJson).to.have.property('humidity');",
+                  "    pm.expect(responseJson).to.have.property('conditions');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/weather/api/current/?lat=23.2325&lon=87.8615",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "weather", "api", "current", ""],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "23.2325"
+                },
+                {
+                  "key": "lon",
+                  "value": "87.8615"
+                }
+              ]
+            },
+            "description": "🌡️ Get real-time weather data for specific location"
+          }
+        },
+        {
+          "name": "Get Weather Forecast",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/weather/api/forecast/?lat=23.2325&lon=87.8615&days=14",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "weather", "api", "forecast", ""],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "23.2325"
+                },
+                {
+                  "key": "lon",
+                  "value": "87.8615"
+                },
+                {
+                  "key": "days",
+                  "value": "14"
+                }
+              ]
+            },
+            "description": "📅 Get detailed weather forecast with agricultural insights"
+          }
+        },
+        {
+          "name": "Get Weather Alerts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/weather/api/alerts/?lat=23.2325&lon=87.8615&severity=high",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "weather", "api", "alerts", ""],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "23.2325"
+                },
+                {
+                  "key": "lon",
+                  "value": "87.8615"
+                },
+                {
+                  "key": "severity",
+                  "value": "high"
+                }
+              ]
+            },
+            "description": "🚨 Get weather alerts and warnings for farming operations"
+          }
+        },
+        {
+          "name": "Analyze Weather for Crop",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"crop_name\": \"Rice\",\n    \"latitude\": 23.2325,\n    \"longitude\": 87.8615,\n    \"analysis_period\": 30,\n    \"growth_stage\": \"flowering\",\n    \"include_risk_assessment\": true\n}"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/weather/forecasts/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "weather", "forecasts", ""]
+            },
+            "description": "🌾 Analyze weather suitability for specific crop and growth stage"
+          }
+        },
+        {
+          "name": "Get Extreme Weather Risk",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/weather/api/extreme_weather_risk/?lat=23.2325&lon=87.8615&days=7",
+              "host": ["{{api_base_url}}"],
+              "path": [
+                "{{api_version}}",
+                "weather",
+                "api",
+                "extreme_weather_risk",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "23.2325"
+                },
+                {
+                  "key": "lon",
+                  "value": "87.8615"
+                },
+                {
+                  "key": "days",
+                  "value": "7"
+                }
+              ]
+            },
+            "description": "⚠️ Assess extreme weather risks for agricultural planning"
+          }
+        },
+        {
+          "name": "Get Planting Window Recommendations",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"crop_name\": \"Wheat\",\n    \"latitude\": 23.2325,\n    \"longitude\": 87.8615,\n    \"analysis_period\": 60,\n    \"soil_type\": \"loamy\"\n}"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/weather/forecasts/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "weather", "forecasts", ""]
+            },
+            "description": "📅 Get optimal planting window based on weather patterns"
+          }
+        }
+      ]
+    },
+    {
+      "name": "07_Smart_Irrigation",
+      "description": "💧 Intelligent irrigation management and water optimization",
+      "item": [
+        {
+          "name": "Get Field Moisture Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/irrigation/fields/{{test_field_id}}/",
+              "host": ["{{api_base_url}}"],
+              "path": [
+                "{{api_version}}",
+                "irrigation",
+                "fields",
+                "{{test_field_id}}",
+                ""
+              ]
+            },
+            "description": "💧 Get current soil moisture levels and irrigation status"
+          }
+        },
+        {
+          "name": "Add Moisture Reading",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"field\": \"{{test_field_id}}\",\n    \"moisture_level\": 45.5,\n    \"depth\": 15,\n    \"temperature\": 25.5,\n    \"sensor_id\": \"MOISTURE_SENSOR_001\",\n    \"reading_timestamp\": \"2024-09-12T10:30:00Z\",\n    \"sensor_location\": {\n        \"latitude\": 23.2325,\n        \"longitude\": 87.8615\n    }\n}"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/irrigation/moisture/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "irrigation", "moisture", ""]
+            },
+            "description": "📊 Add new soil moisture sensor reading"
+          }
+        },
+        {
+          "name": "Bulk Upload Moisture Data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"readings\": [\n        {\n            \"field\": \"{{test_field_id}}\",\n            \"moisture_level\": 45.5,\n            \"depth\": 15,\n            \"temperature\": 25.5,\n            \"sensor_id\": \"SENSOR001\",\n            \"timestamp\": \"2024-09-12T10:00:00Z\"\n        },\n        {\n            \"field\": \"{{test_field_id}}\",\n            \"moisture_level\": 47.2,\n            \"depth\": 30,\n            \"temperature\": 24.8,\n            \"sensor_id\": \"SENSOR002\",\n            \"timestamp\": \"2024-09-12T10:00:00Z\"\n        }\n    ]\n}"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/irrigation/moisture/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "irrigation", "moisture", ""]
+            },
+            "description": "📥 Bulk upload multiple moisture sensor readings"
+          }
+        },
+        {
+          "name": "Create Irrigation Schedule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.collectionVariables.set('test_schedule_id', responseJson.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"field\": \"{{test_field_id}}\",\n    \"scheduled_date\": \"2024-09-15\",\n    \"scheduled_time\": \"06:00:00\",\n    \"duration_minutes\": 45,\n    \"water_amount\": 1500,\n    \"irrigation_type\": \"drip\",\n    \"priority\": \"high\",\n    \"weather_dependent\": true,\n    \"min_soil_moisture\": 30,\n    \"notes\": \"Critical irrigation for flowering stage\"\n}"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/irrigation/schedules/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "irrigation", "schedules", ""]
+            },
+            "description": "📅 Create smart irrigation schedule with weather integration"
+          }
+        },
+        {
+          "name": "Get AI Irrigation Recommendations",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"field_id\": \"{{test_field_id}}\",\n    \"analysis_period\": 7,\n    \"include_weather_forecast\": true,\n    \"include_crop_stage_requirements\": true,\n    \"optimization_goal\": \"water_efficiency\"\n}"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/irrigation/advisor/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "irrigation", "advisor", ""]
+            },
+            "description": "🤖 Get AI-powered irrigation recommendations"
+          }
+        },
+        {
+          "name": "Optimize Irrigation Schedule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"field_ids\": [\"{{test_field_id}}\"],\n    \"optimization_period\": 14,\n    \"water_source_capacity\": 10000,\n    \"optimization_criteria\": {\n        \"water_efficiency\": 0.4,\n        \"crop_health\": 0.4,\n        \"cost_optimization\": 0.2\n    }\n}"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/irrigation/schedules/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "irrigation", "schedules", ""]
+            },
+            "description": "⚡ Optimize irrigation schedule across multiple fields"
+          }
+        },
+        {
+          "name": "Get Water Consumption Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/irrigation/history/?field={{test_field_id}}&days=30&group_by=day",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "irrigation", "history", ""],
+              "query": [
+                {
+                  "key": "field",
+                  "value": "{{test_field_id}}"
+                },
+                {
+                  "key": "days",
+                  "value": "30"
+                },
+                {
+                  "key": "group_by",
+                  "value": "day"
+                }
+              ]
+            },
+            "description": "📊 Get detailed water consumption analytics and trends"
+          }
+        }
+      ]
+    },
+    {
+      "name": "08_Market_Intelligence",
+      "description": "📈 Advanced market analysis and price predictions",
+      "item": [
+        {
+          "name": "Get Nearby Markets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/market/markets/?lat=23.2325&lon=87.8615&radius=50&active_only=true",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "market", "markets", ""],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "23.2325"
+                },
+                {
+                  "key": "lon",
+                  "value": "87.8615"
+                },
+                {
+                  "key": "radius",
+                  "value": "50"
+                },
+                {
+                  "key": "active_only",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "🏪 Find nearby agricultural markets with real-time data"
+          }
+        },
+        {
+          "name": "Get Real-time Market Prices",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Market prices retrieved', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Price data contains required fields', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    if (responseJson.results && responseJson.results.length > 0) {",
+                  "        const price = responseJson.results[0];",
+                  "        pm.expect(price).to.have.property('commodity');",
+                  "        pm.expect(price).to.have.property('modal_price');",
+                  "        pm.expect(price).to.have.property('date');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/market/prices/?market_id=1&date=today&commodity=rice,wheat,sugarcane",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "market", "prices", ""],
+              "query": [
+                {
+                  "key": "market_id",
+                  "value": "1"
+                },
+                {
+                  "key": "date",
+                  "value": "today"
+                },
+                {
+                  "key": "commodity",
+                  "value": "rice,wheat,sugarcane"
+                }
+              ]
+            },
+            "description": "💰 Get current market prices for multiple commodities"
+          }
+        },
+        {
+          "name": "Generate Price Prediction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"commodity_id\": 1,\n    \"market_id\": 1,\n    \"prediction_horizon\": 30,\n    \"include_seasonal_factors\": true,\n    \"include_weather_impact\": true,\n    \"confidence_interval\": 0.95\n}"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/market/predictions/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "market", "predictions", ""]
+            },
+            "description": "🔮 Generate AI-powered price predictions"
+          }
+        },
+        {
+          "name": "Market Opportunity Analysis",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/market/analysis/?lat=23.2325&lon=87.8615&commodities=1,2,3&analysis_type=opportunity",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "market", "analysis", ""],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "23.2325"
+                },
+                {
+                  "key": "lon",
+                  "value": "87.8615"
+                },
+                {
+                  "key": "commodities",
+                  "value": "1,2,3"
+                },
+                {
+                  "key": "analysis_type",
+                  "value": "opportunity"
+                }
+              ]
+            },
+            "description": "🎯 Identify market opportunities and optimal selling strategies"
+          }
+        },
+        {
+          "name": "Create Transaction Record",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"transaction_type\": \"sell\",\n    \"commodity\": 1,\n    \"market\": 1,\n    \"quantity\": 150,\n    \"unit_price\": 2650,\n    \"total_amount\": 397500,\n    \"transaction_date\": \"2024-09-12\",\n    \"quality_grade\": \"A\",\n    \"transportation_cost\": 5000,\n    \"commission\": 7950,\n    \"notes\": \"Premium quality organic rice\"\n}"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/market/transactions/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "market", "transactions", ""]
+            },
+            "description": "💼 Record market transaction with detailed information"
+          }
+        },
+        {
+          "name": "Get Profit Loss Analysis",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/market/transactions/?analysis_type=profit_loss&period=quarterly&commodity=1",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "market", "transactions", ""],
+              "query": [
+                {
+                  "key": "analysis_type",
+                  "value": "profit_loss"
+                },
+                {
+                  "key": "period",
+                  "value": "quarterly"
+                },
+                {
+                  "key": "commodity",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "📊 Comprehensive profit and loss analysis"
+          }
+        },
+        {
+          "name": "Create Price Alert",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"commodity\": 1,\n    \"market\": 1,\n    \"alert_type\": \"price_above\",\n    \"threshold_value\": \"3000\",\n    \"notification_methods\": [\"email\", \"push\"],\n    \"is_active\": true,\n    \"expiry_date\": \"2024-12-31\"\n}"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/market/alerts/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "market", "alerts", ""]
+            },
+            "description": "🔔 Set up intelligent price alerts and notifications"
+          }
+        }
+      ]
+    },
+    {
+      "name": "09_User_Management_Extended",
+      "description": "👥 Extended user management and profile services",
+      "item": [
+        {
+          "name": "Get User Notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/users/notifications/?unread_only=true&limit=20",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "users", "notifications", ""],
+              "query": [
+                {
+                  "key": "unread_only",
+                  "value": "true"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "🔔 Get user notifications and alerts"
+          }
+        },
+        {
+          "name": "Mark Notifications as Read",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"notification_ids\": [1, 2, 3]\n}"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/users/notifications/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "users", "notifications", ""]
+            },
+            "description": "✅ Mark multiple notifications as read"
+          }
+        },
+        {
+          "name": "Get Activity Log",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/users/activities/?activity_type=api_usage&days=30",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "users", "activities", ""],
+              "query": [
+                {
+                  "key": "activity_type",
+                  "value": "api_usage"
+                },
+                {
+                  "key": "days",
+                  "value": "30"
+                }
+              ]
+            },
+            "description": "📋 Get detailed user activity log"
+          }
+        },
+        {
+          "name": "Submit Feedback",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"feedback_type\": \"feature_request\",\n    \"subject\": \"Enhanced crop rotation planner\",\n    \"message\": \"It would be beneficial to have an advanced crop rotation planning feature that considers soil health, nutrient depletion, and market trends over multiple seasons.\",\n    \"priority\": \"medium\",\n    \"category\": \"product_improvement\",\n    \"attachments\": []\n}"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/users/feedbacks/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "users", "feedbacks", ""]
+            },
+            "description": "💬 Submit user feedback and feature requests"
+          }
+        },
+        {
+          "name": "Manage Subscription",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/users/subscriptions/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "users", "subscriptions", ""]
+            },
+            "description": "💳 Get current subscription details and usage"
+          }
+        },
+        {
+          "name": "Create API Key",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Mobile App Integration\",\n    \"description\": \"API key for mobile application access\",\n    \"permissions\": [\"read\", \"write\"],\n    \"rate_limit\": 1000,\n    \"expires_at\": \"2025-12-31T23:59:59Z\"\n}"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/users/api-keys/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "users", "api-keys", ""]
+            },
+            "description": "🔑 Create new API key for third-party integrations"
+          }
+        }
+      ]
+    },
+    {
+      "name": "10_Admin_Management",
+      "description": "⚙️ Administrative endpoints and system management",
+      "item": [
+        {
+          "name": "Admin Login",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/",
+              "host": ["{{base_url}}"],
+              "path": ["admin", ""]
+            },
+            "description": "🏛️ Access Django admin interface"
+          }
+        },
+        {
+          "name": "Debug Toolbar (Development)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{base_url}}/__debug__/",
+              "host": ["{{base_url}}"],
+              "path": ["__debug__", ""]
+            },
+            "description": "🛠️ Access debug toolbar (development only)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "11_File_Media_Operations",
+      "description": "📁 File upload and media management",
+      "item": [
+        {
+          "name": "Upload Profile Picture",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "picture",
+                  "type": "file",
+                  "src": "",
+                  "description": "Profile picture image file"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/users/profiles/upload_picture/",
+              "host": ["{{api_base_url}}"],
+              "path": [
+                "{{api_version}}",
+                "users",
+                "profiles",
+                "upload_picture",
+                ""
+              ]
+            },
+            "description": "📸 Upload user profile picture"
+          }
+        },
+        {
+          "name": "Upload Field Image",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "",
+                  "description": "Field photograph"
+                },
+                {
+                  "key": "field_id",
+                  "value": "{{test_field_id}}",
+                  "type": "text"
+                },
+                {
+                  "key": "image_type",
+                  "value": "overview",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Field overview after harvest",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/crop/fields/{{test_field_id}}/images/",
+              "host": ["{{api_base_url}}"],
+              "path": [
+                "{{api_version}}",
+                "crop",
+                "fields",
+                "{{test_field_id}}",
+                "images",
+                ""
+              ]
+            },
+            "description": "🏞️ Upload field images for documentation"
+          }
+        },
+        {
+          "name": "Get Media Files",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{base_url}}/media/",
+              "host": ["{{base_url}}"],
+              "path": ["media", ""]
+            },
+            "description": "📁 Access uploaded media files (development only)"
+          }
+        },
+        {
+          "name": "Get Static Files",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{base_url}}/static/",
+              "host": ["{{base_url}}"],
+              "path": ["static", ""]
+            },
+            "description": "🎨 Access static files and assets"
+          }
+        }
+      ]
+    },
+    {
+      "name": "12_Testing_Validation",
+      "description": "🧪 API testing and validation endpoints",
+      "item": [
+        {
+          "name": "Validate API Response Structure",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Comprehensive API validation",
+                  "pm.test('✅ API responds within acceptable time', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "",
+                  "pm.test('📋 Response has correct content type', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('🔒 Security headers present', function () {",
+                  "    pm.expect(pm.response.headers.has('X-Frame-Options')).to.be.true;",
+                  "    pm.expect(pm.response.headers.has('X-Content-Type-Options')).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('📊 Response structure validation', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.be.an('object');",
+                  "});",
+                  "",
+                  "// Log response for debugging",
+                  "console.log('Response Status:', pm.response.status);",
+                  "console.log('Response Time:', pm.response.responseTime + 'ms');",
+                  "console.log('Response Size:', pm.response.responseSize + ' bytes');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/",
+              "host": ["{{api_base_url}}"],
+              "path": [""]
+            },
+            "description": "🔍 Comprehensive API validation and testing"
+          }
+        },
+        {
+          "name": "Test Authentication Flow",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Clear any existing auth tokens",
+                  "pm.collectionVariables.unset('auth_token');",
+                  "console.log('🧹 Cleared authentication tokens for fresh test');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('🔐 Authentication test', function () {",
+                  "    // Should return 401 without authentication",
+                  "    pm.expect(pm.response.code).to.be.oneOf([401, 403]);",
+                  "});",
+                  "",
+                  "pm.test('🛡️ Proper error response format', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('detail');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base_url}}/{{api_version}}/users/profiles/",
+              "host": ["{{api_base_url}}"],
+              "path": ["{{api_version}}", "users", "profiles", ""]
+            },
+            "description": "🧪 Test authentication requirements and error handling"
+          }
+        },
+        {
+          "name": "Performance Benchmark",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Performance benchmarking",
+                  "pm.test('⚡ API performance benchmark', function () {",
+                  "    const responseTime = pm.response.responseTime;",
+                  "    ",
+                  "    if (responseTime < 500) {",
+                  "        console.log('🚀 Excellent performance:', responseTime + 'ms');",
+                  "    } else if (responseTime < 1000) {",
+                  "        console.log('✅ Good performance:', responseTime + 'ms');",
+                  "    } else if (responseTime < 2000) {",
+                  "        console.log('⚠️ Acceptable performance:', responseTime + 'ms');",
+                  "    } else {",
+                  "        console.log('🐌 Poor performance:', responseTime + 'ms');",
+                  "    }",
+                  "    ",
+                  "    pm.expect(responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "// Store performance metrics",
+                  "pm.collectionVariables.set('last_response_time', pm.response.responseTime);",
+                  "pm.collectionVariables.set('last_response_size', pm.response.responseSize);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{api_base_url}}/health/",
+              "host": ["{{api_base_url}}"],
+              "path": ["health", ""]
+            },
+            "description": "📊 API performance benchmarking and metrics"
+          }
+        }
+      ]
+    }
+  ]
+}

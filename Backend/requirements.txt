@@ -1,110 +1,137 @@
-# Core Django
-Django==5.0.1
+# =====================================================
+# SmartCropAdvisory Requirements - Python 3.11
+# MongoDB-Only Configuration
+# =====================================================
+
+# Core Django Framework
+Django==4.2.11
 djangorestframework==3.14.0
 django-cors-headers==4.3.1
+django-filter==23.3
 django-environ==0.11.2
+
+# MongoDB Support - Primary Database
+mongoengine==0.27.0
+pymongo==4.8.0  # Latest compatible version
+dnspython==2.4.2
+django-rest-framework-mongoengine==3.4.1  # For DRF integration
+
+# Caching & Redis
+redis==5.0.1
 django-redis==5.4.0
-django-filter==23.5
+hiredis==2.2.3
 
----
+# Static & Media Files
+whitenoise==6.6.0
+Pillow==11.0.0
 
-# Database
-psycopg2-binary==2.9.9
-dj-database-url==2.1.0
+# Environment & Config
+python-decouple==3.8
+python-dotenv==1.0.0
 
----
+# API Documentation
+drf-spectacular==0.26.5
+drf-yasg==1.21.7
 
-# ML & Data Science
-absl-py==2.3.1
-astunparse==1.6.3
-flatbuffers==25.2.10
-gast==0.6.0
-google-pasta==0.2.0
-grpcio==1.74.0
-h5py==3.14.0
-joblib==1.5.2
-keras==3.11.3
-libclang==18.1.1
-ml_dtypes==0.5.3
-namex==0.1.0
-numpy==2.2.6
-opencv-python==4.12.0.88
-opt_einsum==3.4.0
-optree==0.17.0
-packaging==25.0
+# Authentication & Security
+djangorestframework-simplejwt==5.3.0
+django-allauth==0.57.0
+cryptography==41.0.7
+pycryptodome==3.19.0
+
+# =====================================================
+# Machine Learning Stack (Updated for Compatibility)
+# =====================================================
+
+# Numerical Computing - Use NumPy 1.x for better compatibility
+numpy==1.24.4
 pandas==2.0.3
-Pillow==10.0.0
-protobuf==6.32.0
-scikit-learn==1.3.0
-scipy==1.15.3
-tensorflow==2.20.0
-tensorboard==2.20.0
-tensorboard-data-server==0.7.2
-termcolor==3.1.0
-threadpoolctl==3.6.0
-typing_extensions==4.15.0
-wrapt==1.17.3
+scipy==1.11.4
+
+# Computer Vision
+opencv-python==4.8.1.78
+
+# Machine Learning
+scikit-learn==1.3.2
+joblib==1.3.2
+
+# Deep Learning - Updated TensorFlow to 2.15 (supports NumPy 1.24)
+tensorflow==2.15.0
+keras==2.15.0
+tensorboard==2.15.0
+
+# ML Dependencies (Updated versions)
+h5py==3.10.0
+protobuf==4.23.4
+grpcio==1.59.3
+absl-py==2.0.0
+astunparse==1.6.3
+flatbuffers==23.5.26
+gast==0.5.4
+google-pasta==0.2.0
+google-auth==2.25.2
+google-auth-oauthlib==1.1.0
+libclang==16.0.6
+ml-dtypes==0.2.0
+opt-einsum==3.3.0
+termcolor==2.4.0
+typing-extensions==4.8.0
+wrapt==1.14.1
+werkzeug==3.0.1
+markdown==3.5.2
+
+# Data Visualization
 matplotlib==3.8.2
 seaborn==0.13.0
 
----
-
-# Weather & External APIs
-requests==2.31.0
-python-dateutil==2.9.0.post0
-pytz==2025.2
-urllib3==2.5.0
-idna==3.10
-charset-normalizer==3.4.3
-certifi==2025.8.3
-
----
-
 # Image Processing
-opencv-contrib-python==4.8.1.78
 albumentations==1.3.1
-imgaug==0.4.0
 
----
+# =====================================================
+# External APIs & Services
+# =====================================================
 
-# Redis & Caching
-redis==5.0.1
-hiredis==2.2.3
+# HTTP & APIs
+requests==2.31.0
+urllib3==2.0.7
+certifi==2023.11.17
+charset-normalizer==3.3.2
+idna==3.6
 
----
+# Date & Time
+python-dateutil==2.8.2
+pytz==2023.3
 
-# Task Queue (Optional)
+# Geospatial
+geopy==2.4.0
+geographiclib==2.0
+haversine==2.8.0
+
+# =====================================================
+# Task Queue & Background Jobs
+# =====================================================
+
 celery==5.3.4
-celery[redis]==5.3.4
+django-celery-beat==2.5.0
+django-celery-results==2.5.1
+kombu==5.3.2
+vine==5.1.0
+billiard==4.2.0
+amqp==5.2.0
 
----
+# =====================================================
+# Development Tools
+# =====================================================
 
-# Authentication
-djangorestframework-simplejwt==5.3.1
-django-allauth==0.58.2
+# Django Extensions
+django-extensions==3.2.3
+django-debug-toolbar==4.2.0
 
----
-
-# API Documentation
-drf-yasg==1.21.7
-drf-spectacular==0.27.0
-
----
-
-# File Processing
-python-magic==0.4.27
-python-docx==1.1.0
-openpyxl==3.1.2
-
----
-
-# Environmental Data
-geopandas==0.14.1
-shapely==2.0.2
-rasterio==1.3.9
-folium==0.15.1
-
----
+# Code Quality
+black==23.12.1
+flake8==6.1.0
+isort==5.13.2
+mypy==1.7.1
 
 # Testing
 pytest==7.4.3
@@ -113,48 +140,46 @@ pytest-cov==4.1.0
 factory-boy==3.3.0
 faker==20.1.0
 
----
-
-# Development Tools
-asgiref==3.9.1
-Markdown==3.9
-markdown-it-py==4.0.0
-MarkupSafe==3.0.2
-mdurl==0.1.2
-Pygments==2.19.2
-rich==14.1.0
-sqlparse==0.5.3
-Werkzeug==3.1.3
-ipython==8.18.1
-django-extensions==3.2.3
-django-debug-toolbar==4.2.0
-
----
-
-# Production
-gunicorn==21.2.0
-whitenoise==6.6.0
-python-dotenv==1.0.0
-
----
-
+# =====================================================
 # Utilities
+# =====================================================
+
+# CLI & Progress
+click==8.1.7
+click-didyoumean==0.3.0
+click-plugins==1.1.1
+click-repl==0.3.0
 tqdm==4.66.1
 colorama==0.4.6
-click==8.1.7
+
+# Data Processing
+python-slugify==8.0.1
+PyYAML==6.0.1
+jsonschema==4.20.0
+marshmallow==3.20.1
+python-json-logger==2.0.7
+
+# Django Utilities
+django-model-utils==4.3.1
+django-import-export==3.3.3
+django-crispy-forms==2.1
+crispy-bootstrap5==2023.10
+
+# File Processing
+openpyxl==3.1.2
+python-docx==1.1.0
 beautifulsoup4==4.12.2
-lxml==4.9.4
-python-decouple==3.8
-six==1.17.0
+lxml==4.9.3
 
----
+# =====================================================
+# Production & Deployment
+# =====================================================
 
-# GraphQL (Optional)
-graphene-django==3.1.5
-django-graphql-jwt==0.4.0
+gunicorn==21.2.0
+uvicorn[standard]==0.24.0
+django-health-check==3.17.0
+django-compressor==4.4
 
----
-
-# Monitoring
-sentry-sdk==1.39.1
-django-prometheus==2.3.1
+# Security
+django-ratelimit==4.1.0
+django-csp==3.7

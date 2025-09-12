@@ -1,11 +1,3 @@
-"""
-===========================================
-urls.py
-URL Configuration for CropAnalysis App
-Author: Dibakar
-===========================================
-"""
-
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
@@ -14,7 +6,7 @@ router = DefaultRouter()
 router.register(r"crops", views.CropViewSet, basename="crop")
 router.register(r"diseases", views.DiseaseViewSet, basename="disease")
 router.register(
-    r"disease-detections", views.DiseaseDetectionViewSet, basename="disease-detection"
+    r"disease-detections", views.DiseaseViewSet, basename="disease-detection"
 )
 router.register(r"fields", views.FieldViewSet, basename="field")
 router.register(
@@ -31,10 +23,9 @@ app_name = "crop_analysis"
 
 urlpatterns = [
     path("", include(router.urls)),
-    # Custom endpoints
     path(
         "detect-disease/",
-        views.DiseaseDetectionViewSet.as_view({"post": "detect"}),
+        views.DiseaseViewSet.as_view({"post": "detect"}),
         name="detect-disease",
     ),
     path(
@@ -47,7 +38,6 @@ urlpatterns = [
         views.CropRecommendationViewSet.as_view({"post": "recommend"}),
         name="recommend-crops",
     ),
-    # Analysis endpoints
     path(
         "fields/<int:pk>/analyze/",
         views.FieldViewSet.as_view({"post": "analyze"}),
@@ -58,10 +48,9 @@ urlpatterns = [
         views.FieldViewSet.as_view({"get": "weather"}),
         name="field-weather",
     ),
-    # Statistics
     path(
         "disease-detections/statistics/",
-        views.DiseaseDetectionViewSet.as_view({"get": "statistics"}),
+        views.DiseaseViewSet.as_view({"get": "statistics"}),
         name="detection-stats",
     ),
     path(
@@ -69,7 +58,6 @@ urlpatterns = [
         views.YieldPredictionViewSet.as_view({"get": "accuracy_report"}),
         name="yield-accuracy",
     ),
-    # Tips
     path(
         "farming-tips/daily/",
         views.FarmingTipViewSet.as_view({"get": "daily"}),

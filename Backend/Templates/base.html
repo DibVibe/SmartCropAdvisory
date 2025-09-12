@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- SEO Meta Tags -->
+    <title>
+      {% block title %}SmartCropAdvisory - AI-Powered Agricultural
+      Intelligence{% endblock %}
+    </title>
+    <meta
+      name="description"
+      content="{% block description %}AI-powered agricultural intelligence system providing crop analysis, weather integration, irrigation advisory, and market insights for modern farming.{% endblock %}"
+    />
+    <meta
+      name="keywords"
+      content="agriculture, AI, crop analysis, weather, irrigation, smart farming, crop advisory, agricultural technology"
+    />
+    <meta name="author" content="SmartCropAdvisory Team" />
+
+    <!-- Open Graph Meta Tags -->
+    <meta
+      property="og:title"
+      content="{% block og_title %}SmartCropAdvisory - AI-Powered Agricultural Intelligence{% endblock %}"
+    />
+    <meta
+      property="og:description"
+      content="{% block og_description %}Transform your farming with AI-powered insights for crop analysis, weather forecasting, and irrigation management.{% endblock %}"
+    />
+    <meta
+      property="og:image"
+      content="{% block og_image %}{% load static %}{% static 'images/og-image.jpg' %}{% endblock %}"
+    />
+    <meta
+      property="og:url"
+      content="{% block og_url %}{{ request.build_absolute_uri }}{% endblock %}"
+    />
+    <meta property="og:type" content="website" />
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="{% block twitter_title %}SmartCropAdvisory{% endblock %}"
+    />
+    <meta
+      name="twitter:description"
+      content="{% block twitter_description %}AI-powered agricultural intelligence for modern farming{% endblock %}"
+    />
+
+    <!-- Favicon -->
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="{% load static %}{% static 'images/favicon.ico' %}"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="{% load static %}{% static 'images/apple-touch-icon.png' %}"
+    />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <!-- CSS -->
+    <style>
+      :root {
+        /* Agricultural Color Palette */
+        --primary-green: #2e7d32;
+        --primary-light: #4caf50;
+        --primary-dark: #1b5e20;
+        --secondary-green: #66bb6a;
+        --accent-orange: #ff9800;
+        --accent-yellow: #ffc107;
+
+        /* Earth Tones */
+        --earth-brown: #5d4e37;
+        --earth-tan: #d2b48c;
+        --earth-sand: #f4a460;
+
+        /* Neutral Colors */
+        --white: #ffffff;
+        --light-gray: #f8f9fa;
+        --medium-gray: #6c757d;
+        --dark-gray: #343a40;
+        --black: #000000;
+
+        /* Status Colors */
+        --success: #28a745;
+        --warning: #ffc107;
+        --danger: #dc3545;
+        --info: #17a2b8;
+
+        /* Typography */
+        --font-primary: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+        --font-secondary: "Poppins", sans-serif;
+
+        /* Spacing */
+        --spacing-xs: 0.25rem;
+        --spacing-sm: 0.5rem;
+        --spacing-md: 1rem;
+        --spacing-lg: 1.5rem;
+        --spacing-xl: 2rem;
+        --spacing-xxl: 3rem;
+
+        /* Border Radius */
+        --border-radius-sm: 0.25rem;
+        --border-radius-md: 0.5rem;
+        --border-radius-lg: 1rem;
+
+        /* Shadows */
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+        --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      /* Reset and Base Styles */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        font-family: var(--font-primary);
+        line-height: 1.6;
+        color: var(--dark-gray);
+        background-color: var(--light-gray);
+      }
+
+      /* Navigation */
+      .navbar {
+        background: linear-gradient(
+          135deg,
+          var(--primary-green) 0%,
+          var(--primary-dark) 100%
+        );
+        box-shadow: var(--shadow-md);
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        padding: var(--spacing-md) 0;
+      }
+
+      .navbar-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 var(--spacing-lg);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .navbar-brand {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        color: var(--white);
+        font-family: var(--font-secondary);
+        font-weight: 700;
+        font-size: 1.5rem;
+      }
+
+      .navbar-brand i {
+        margin-right: var(--spacing-sm);
+        font-size: 1.8rem;
+      }
+
+      .navbar-nav {
+        display: flex;
+        list-style: none;
+        gap: var(--spacing-lg);
+      }
+
+      .navbar-nav a {
+        color: var(--white);
+        text-decoration: none;
+        font-weight: 500;
+        padding: var(--spacing-sm) var(--spacing-md);
+        border-radius: var(--border-radius-md);
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+      }
+
+      .navbar-nav a:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        transform: translateY(-1px);
+      }
+
+      .navbar-toggle {
+        display: none;
+        background: none;
+        border: none;
+        color: var(--white);
+        font-size: 1.5rem;
+        cursor: pointer;
+      }
+
+      /* Main Content */
+      .main-content {
+        min-height: calc(100vh - 200px);
+        padding: var(--spacing-xl) 0;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 var(--spacing-lg);
+      }
+
+      /* Alert Messages */
+      .alert {
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+        border-radius: var(--border-radius-md);
+        font-weight: 500;
+      }
+
+      .alert-success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+
+      .alert-warning {
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+      }
+
+      .alert-danger {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+
+      .alert-info {
+        background-color: #cce7f0;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+      }
+
+      /* Footer */
+      .footer {
+        background: linear-gradient(
+          135deg,
+          var(--dark-gray) 0%,
+          var(--black) 100%
+        );
+        color: var(--white);
+        padding: var(--spacing-xxl) 0 var(--spacing-lg);
+        margin-top: var(--spacing-xxl);
+      }
+
+      .footer-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 var(--spacing-lg);
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: var(--spacing-xl);
+      }
+
+      .footer-section h3 {
+        font-family: var(--font-secondary);
+        color: var(--secondary-green);
+        margin-bottom: var(--spacing-lg);
+        font-size: 1.2rem;
+      }
+
+      .footer-section ul {
+        list-style: none;
+      }
+
+      .footer-section ul li {
+        margin-bottom: var(--spacing-sm);
+      }
+
+      .footer-section ul li a {
+        color: var(--white);
+        text-decoration: none;
+        opacity: 0.8;
+        transition: opacity 0.3s ease;
+      }
+
+      .footer-section ul li a:hover {
+        opacity: 1;
+        color: var(--secondary-green);
+      }
+
+      .footer-bottom {
+        max-width: 1200px;
+        margin: var(--spacing-xl) auto 0;
+        padding: var(--spacing-lg) var(--spacing-lg) 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        text-align: center;
+        opacity: 0.7;
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .navbar-nav {
+          display: none;
+          position: absolute;
+          top: 100%;
+          left: 0;
+          width: 100%;
+          background: var(--primary-green);
+          flex-direction: column;
+          padding: var(--spacing-lg);
+          box-shadow: var(--shadow-md);
+        }
+
+        .navbar-nav.active {
+          display: flex;
+        }
+
+        .navbar-toggle {
+          display: block;
+        }
+
+        .container {
+          padding: 0 var(--spacing-md);
+        }
+
+        .footer-content {
+          grid-template-columns: 1fr;
+          text-align: center;
+        }
+      }
+
+      /* Loading Animation */
+      .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: var(--white);
+        animation: spin 1s ease-in-out infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Utility Classes */
+      .text-center {
+        text-align: center;
+      }
+      .text-left {
+        text-align: left;
+      }
+      .text-right {
+        text-align: right;
+      }
+      .d-none {
+        display: none;
+      }
+      .d-block {
+        display: block;
+      }
+      .d-flex {
+        display: flex;
+      }
+      .justify-center {
+        justify-content: center;
+      }
+      .align-center {
+        align-items: center;
+      }
+      .gap-sm {
+        gap: var(--spacing-sm);
+      }
+      .gap-md {
+        gap: var(--spacing-md);
+      }
+      .gap-lg {
+        gap: var(--spacing-lg);
+      }
+      .mt-0 {
+        margin-top: 0;
+      }
+      .mt-1 {
+        margin-top: var(--spacing-sm);
+      }
+      .mt-2 {
+        margin-top: var(--spacing-md);
+      }
+      .mt-3 {
+        margin-top: var(--spacing-lg);
+      }
+      .mb-0 {
+        margin-bottom: 0;
+      }
+      .mb-1 {
+        margin-bottom: var(--spacing-sm);
+      }
+      .mb-2 {
+        margin-bottom: var(--spacing-md);
+      }
+      .mb-3 {
+        margin-bottom: var(--spacing-lg);
+      }
+      .p-0 {
+        padding: 0;
+      }
+      .p-1 {
+        padding: var(--spacing-sm);
+      }
+      .p-2 {
+        padding: var(--spacing-md);
+      }
+      .p-3 {
+        padding: var(--spacing-lg);
+      }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+  </head>
+  <body>
+    <!-- Navigation -->
+    <nav class="navbar">
+      <div class="navbar-container">
+        <a href="/" class="navbar-brand">
+          <i class="fas fa-seedling"></i>
+          SmartCropAdvisory
+        </a>
+
+        <ul class="navbar-nav" id="navbar-nav">
+          <li>
+            <a href="/"><i class="fas fa-home"></i> Home</a>
+          </li>
+          <li>
+            <a href="/api/docs/"><i class="fas fa-book"></i> API Docs</a>
+          </li>
+          <li>
+            <a href="/admin/"><i class="fas fa-cog"></i> Admin</a>
+          </li>
+          <li>
+            <a href="/api/health/"><i class="fas fa-heartbeat"></i> Health</a>
+          </li>
+        </ul>
+
+        <button class="navbar-toggle" onclick="toggleNavbar()">
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Alert Messages -->
+    {% if messages %}
+    <div class="container">
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}">
+        <i class="fas fa-info-circle"></i>
+        {{ message }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main class="main-content">{% block content %}{% endblock %}</main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h3>🌾 SmartCropAdvisory</h3>
+          <p>
+            AI-powered agricultural intelligence system providing comprehensive
+            farming solutions for modern agriculture.
+          </p>
+          <div style="margin-top: 1rem">
+            <a
+              href="#"
+              style="
+                color: var(--secondary-green);
+                margin-right: 1rem;
+                font-size: 1.2rem;
+              "
+            >
+              <i class="fab fa-facebook"></i>
+            </a>
+            <a
+              href="#"
+              style="
+                color: var(--secondary-green);
+                margin-right: 1rem;
+                font-size: 1.2rem;
+              "
+            >
+              <i class="fab fa-twitter"></i>
+            </a>
+            <a
+              href="#"
+              style="
+                color: var(--secondary-green);
+                margin-right: 1rem;
+                font-size: 1.2rem;
+              "
+            >
+              <i class="fab fa-linkedin"></i>
+            </a>
+            <a
+              href="#"
+              style="color: var(--secondary-green); font-size: 1.2rem"
+            >
+              <i class="fab fa-instagram"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="footer-section">
+          <h3>🚀 API Services</h3>
+          <ul>
+            <li><a href="/api/v1/crop/">Crop Analysis</a></li>
+            <li><a href="/api/v1/weather/">Weather Integration</a></li>
+            <li><a href="/api/v1/irrigation/">Irrigation Advisory</a></li>
+            <li><a href="/api/v1/market/">Market Analysis</a></li>
+            <li><a href="/api/v1/advisory/">Advisory Services</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-section">
+          <h3>📚 Documentation</h3>
+          <ul>
+            <li><a href="/api/docs/">Swagger UI</a></li>
+            <li><a href="/api/redoc/">ReDoc</a></li>
+            <li><a href="/api/schema/">OpenAPI Schema</a></li>
+            <li><a href="/api/health/">System Health</a></li>
+            <li><a href="/api/status/">API Status</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-section">
+          <h3>📞 Support</h3>
+          <ul>
+            <li><i class="fas fa-envelope"></i> api@smartcropadvisory.com</li>
+            <li><i class="fas fa-phone"></i> +91 123 456 7890</li>
+            <li>
+              <i class="fas fa-map-marker-alt"></i> Agricultural Tech Hub, India
+            </li>
+            <li><a href="#">Help Center</a></li>
+            <li><a href="#">Developer Guide</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>
+          &copy; {{ current_year|default:"2024" }} SmartCropAdvisory. All rights
+          reserved. |
+          <a href="#" style="color: var(--secondary-green)">Privacy Policy</a> |
+          <a href="#" style="color: var(--secondary-green)">Terms of Service</a>
+        </p>
+      </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+      // Mobile Navigation Toggle
+      function toggleNavbar() {
+        const navbar = document.getElementById("navbar-nav");
+        navbar.classList.toggle("active");
+      }
+
+      // Close mobile menu when clicking outside
+      document.addEventListener("click", function (event) {
+        const navbar = document.getElementById("navbar-nav");
+        const toggle = document.querySelector(".navbar-toggle");
+
+        if (!navbar.contains(event.target) && !toggle.contains(event.target)) {
+          navbar.classList.remove("active");
+        }
+      });
+
+      // Smooth scrolling for anchor links
+      document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+        anchor.addEventListener("click", function (e) {
+          e.preventDefault();
+          const target = document.querySelector(this.getAttribute("href"));
+          if (target) {
+            target.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }
+        });
+      });
+
+      // Auto-hide alerts after 5 seconds
+      document.addEventListener("DOMContentLoaded", function () {
+        const alerts = document.querySelectorAll(".alert");
+        alerts.forEach((alert) => {
+          setTimeout(() => {
+            alert.style.opacity = "0";
+            alert.style.transform = "translateY(-10px)";
+            setTimeout(() => alert.remove(), 300);
+          }, 5000);
+        });
+      });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+  </body>
+</html>

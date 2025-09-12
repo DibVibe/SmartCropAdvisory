@@ -1,6 +1,7 @@
 from django.apps import AppConfig
 
 
-class IrrigationadvisorConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'IrrigationAdvisor'
+class IrrigationAdvisorConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "Apps.IrrigationAdvisor"
+    verbose_name = "Irrigation Advisor"

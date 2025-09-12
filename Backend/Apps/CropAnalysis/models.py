@@ -139,7 +139,7 @@ class DiseaseDetection(models.Model):
 class Field(models.Model):
     """User's agricultural field information"""
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="fields")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='cropanalysis_fields')
     name = models.CharField(max_length=200)
     area = models.FloatField(help_text="Area in hectares")
     location_lat = models.FloatField()

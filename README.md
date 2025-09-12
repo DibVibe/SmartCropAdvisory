@@ -343,7 +343,7 @@
 ### **Install Required Software First:**
 
 ```bash
-# 🐍 Install Python 3.11+
+# 🐍 Install Python 3.11
 # Mac:
 brew install python@3.11
 

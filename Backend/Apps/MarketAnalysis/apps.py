@@ -1,6 +1,7 @@
 from django.apps import AppConfig
 
 
-class MarketanalysisConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'MarketAnalysis'
+class MarketAnalysisConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "Apps.MarketAnalysis"
+    verbose_name = "Market Analysis"
