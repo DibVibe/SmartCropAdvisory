@@ -1,6 +1,7 @@
 # =====================================================
 # SmartCropAdvisory Requirements - Python 3.11
 # MongoDB-Only Configuration
+# Updated: 2025-09-13 - Exact versions from pip list
 # =====================================================
 
 # Core Django Framework
@@ -12,9 +13,9 @@ django-environ==0.11.2
 
 # MongoDB Support - Primary Database
 mongoengine==0.27.0
-pymongo==4.8.0  # Latest compatible version
+pymongo==4.8.0
 dnspython==2.4.2
-django-rest-framework-mongoengine==3.4.1  # For DRF integration
+django-rest-framework-mongoengine==3.4.1
 
 # Caching & Redis
 redis==5.0.1
@@ -34,33 +35,37 @@ drf-spectacular==0.26.5
 drf-yasg==1.21.7
 
 # Authentication & Security
-djangorestframework-simplejwt==5.3.0
+djangorestframework-simplejwt==5.5.1  # Updated from 5.3.0
 django-allauth==0.57.0
 cryptography==41.0.7
 pycryptodome==3.19.0
+PyJWT==2.10.1
 
 # =====================================================
-# Machine Learning Stack (Updated for Compatibility)
+# Machine Learning Stack (Exact versions)
 # =====================================================
 
-# Numerical Computing - Use NumPy 1.x for better compatibility
+# Numerical Computing
 numpy==1.24.4
 pandas==2.0.3
 scipy==1.11.4
 
 # Computer Vision
 opencv-python==4.8.1.78
+opencv-python-headless==4.11.0.86
 
 # Machine Learning
 scikit-learn==1.3.2
 joblib==1.3.2
 
-# Deep Learning - Updated TensorFlow to 2.15 (supports NumPy 1.24)
+# Deep Learning
 tensorflow==2.15.0
+tensorflow-macos==2.15.0  # If on macOS
 keras==2.15.0
 tensorboard==2.15.0
+tensorboard-data-server==0.7.2
 
-# ML Dependencies (Updated versions)
+# ML Dependencies
 h5py==3.10.0
 protobuf==4.23.4
 grpcio==1.59.3
@@ -77,15 +82,34 @@ opt-einsum==3.3.0
 termcolor==2.4.0
 typing-extensions==4.8.0
 wrapt==1.14.1
-werkzeug==3.0.1
-markdown==3.5.2
+Werkzeug==3.0.1
+Markdown==3.5.2
+tensorflow-estimator==2.15.0
+tensorflow-io-gcs-filesystem==0.37.1
+cachetools==5.5.2
+oauthlib==3.3.1
+requests-oauthlib==2.0.0
+rsa==4.9.1
+six==1.17.0
+attrs==25.3.0
 
 # Data Visualization
 matplotlib==3.8.2
 seaborn==0.13.0
+contourpy==1.3.2
+cycler==0.12.1
+fonttools==4.59.2
+kiwisolver==1.4.9
+pyparsing==3.2.3
 
 # Image Processing
 albumentations==1.3.1
+scikit-image==0.25.2
+imageio==2.37.0
+lazy_loader==0.4
+networkx==3.5
+qudida==0.0.4
+tifffile==2025.9.9
 
 # =====================================================
 # External APIs & Services
@@ -101,6 +125,7 @@ idna==3.6
 # Date & Time
 python-dateutil==2.8.2
 pytz==2023.3
+tzdata==2025.2
 
 # Geospatial
 geopy==2.4.0
@@ -118,6 +143,12 @@ kombu==5.3.2
 vine==5.1.0
 billiard==4.2.0
 amqp==5.2.0
+click-didyoumean==0.3.0
+click-plugins==1.1.1
+click-repl==0.3.0
+python-crontab==3.3.0
+django-timezone-field==7.1
+cron-descriptor==2.0.6
 
 # =====================================================
 # Development Tools
@@ -132,13 +163,22 @@ black==23.12.1
 flake8==6.1.0
 isort==5.13.2
 mypy==1.7.1
+mypy-extensions==1.1.0
+mccabe==0.7.0
+pycodestyle==2.11.1
+pyflakes==3.1.0
+pathspec==0.12.1
+platformdirs==4.4.0
 
 # Testing
 pytest==7.4.3
 pytest-django==4.7.0
 pytest-cov==4.1.0
 factory-boy==3.3.0
-faker==20.1.0
+Faker==20.1.0
+coverage==7.10.6
+iniconfig==2.1.0
+pluggy==1.6.0
 
 # =====================================================
 # Utilities
@@ -146,30 +186,44 @@ faker==20.1.0
 
 # CLI & Progress
 click==8.1.7
-click-didyoumean==0.3.0
-click-plugins==1.1.1
-click-repl==0.3.0
 tqdm==4.66.1
 colorama==0.4.6
+prompt-toolkit==3.0.52
+wcwidth==0.2.13
 
 # Data Processing
 python-slugify==8.0.1
 PyYAML==6.0.1
 jsonschema==4.20.0
+jsonschema-specifications==2025.9.1
 marshmallow==3.20.1
 python-json-logger==2.0.7
+text-unidecode==1.3
+inflection==0.5.1
+referencing==0.36.2
+rpds-py==0.27.1
 
 # Django Utilities
 django-model-utils==4.3.1
 django-import-export==3.3.3
 django-crispy-forms==2.1
 crispy-bootstrap5==2023.10
+django-appconf==1.1.0
+diff-match-patch==20241021
+tablib==3.5.0
+et-xmlfile==2.0.0
+MarkupPy==1.18
+odfpy==1.4.1
+xlrd==2.0.2
+xlwt==1.3.0
 
 # File Processing
 openpyxl==3.1.2
 python-docx==1.1.0
 beautifulsoup4==4.12.2
 lxml==4.9.3
+soupsieve==2.8
+defusedxml==0.7.1
 
 # =====================================================
 # Production & Deployment
@@ -177,9 +231,38 @@ lxml==4.9.3
 
 gunicorn==21.2.0
 uvicorn[standard]==0.24.0
+uvloop==0.21.0
+httptools==0.6.4
+websockets==15.0.1
+watchfiles==1.1.0
+anyio==4.10.0
+sniffio==1.3.1
+h11==0.16.0
+
+# Django Production
 django-health-check==3.17.0
 django-compressor==4.4
+rcssmin==1.1.1
+rjsmin==1.2.1
 
 # Security
 django-ratelimit==4.1.0
 django-csp==3.7
+
+# Additional Core Dependencies
+asgiref==3.9.1
+sqlparse==0.5.3
+packaging==25.0
+psutil==7.0.0
+MarkupSafe==3.0.2
+cffi==2.0.0
+pycparser==2.23
+setuptools==80.9.0
+wheel==0.45.1
+pip==25.2
+
+# Authentication Dependencies
+pyasn1==0.6.1
+pyasn1-modules==0.4.2
+python3-openid==3.2.0
+uritemplate==4.2.0
