@@ -1,11 +1,11 @@
 // File: /Users/dibakar/Documents/Code/Git & Github/Repo/SmartCropAdvisory/Frontend/app/layout.tsx
-import * as entry from '../../../app1/layout.jsx'
+import * as entry from '../../../app/layout.jsx'
 import type {
   ResolvingMetadata,
   ResolvingViewport,
 } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
-type TEntry = typeof import('../../../app1/layout.jsx')
+type TEntry = typeof import('../../../app/layout.jsx')
 
 type SegmentParams<T extends Object = any> =
   T extends Record<string, any>

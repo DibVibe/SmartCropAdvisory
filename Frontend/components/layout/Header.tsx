@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useAuth } from '../../lib1/hooks/useAuth'
+import { useAuth } from '../../lib/hooks/useAuth'
 import Button from '@/components/ui/Button'
 
 export default function Header() {

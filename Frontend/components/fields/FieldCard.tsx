@@ -1,5 +1,5 @@
-import { Field } from '../../lib1/types'
-import { formatDate } from '../../lib1/utils'
+import { Field } from '../../lib/types'
+import { formatDate } from '../../lib/utils'
 
 interface FieldCardProps {
   field: Field

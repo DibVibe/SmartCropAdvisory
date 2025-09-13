@@ -1,8 +1,8 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { apiClient } from '../../lib1/api/client'
-import { formatDate } from '../../lib1/utils'
+import { apiClient } from '../../lib/api/client'
+import { formatDate } from '../../lib/utils'
 
 export default function RecentActivity() {
   const { data: activities, isLoading } = useQuery({

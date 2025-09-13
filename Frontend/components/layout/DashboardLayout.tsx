@@ -4,7 +4,7 @@ import { ReactNode, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from './Sidebar'
 import Header from './Header'
-import { useAuth } from '../../lib1/hooks/useAuth'
+import { useAuth } from '../../lib/hooks/useAuth'
 
 interface DashboardLayoutProps {
   children: ReactNode

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { formatDate } from '../../lib1/utils'
+import { formatDate } from '../../lib/utils'
 
 export default function IrrigationSchedule() {
   const [selectedDate, setSelectedDate] = useState(

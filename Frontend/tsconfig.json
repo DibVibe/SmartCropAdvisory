@@ -22,12 +22,12 @@
     "paths": {
       "@/*": ["./src/*"],
       "@/components/*": ["./components/*"],
-      "@/lib/*": ["lib1/*"],
-      "@/hooks/*": ["lib1/hooks/*"],
-      "@/types/*": ["lib1/types/*"],
-      "@/api/*": ["lib1/api/*"],
-      "@/store/*": ["lib1/store/*"],
-      "@/utils/*": ["lib1/utils/*"]
+      "@/lib/*": ["lib/*"],
+      "@/hooks/*": ["lib/hooks/*"],
+      "@/types/*": ["lib/types/*"],
+      "@/api/*": ["lib/api/*"],
+      "@/store/*": ["lib/store/*"],
+      "@/utils/*": ["lib/utils/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

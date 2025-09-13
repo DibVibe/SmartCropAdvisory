@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { weatherApi } from '../../lib1/api/crops'
+import { weatherApi } from '../../lib/api/crops'
 import WeatherCard from './WeatherCard'
 import WeatherForecast from './WeatherForecast'
 import WeatherAlerts from './WeatherAlerts'

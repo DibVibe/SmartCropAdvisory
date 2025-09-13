@@ -2,8 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { cn } from '../../lib1/utils'
-import { useAuth } from '../../lib1/hooks/useAuth'
+import { cn } from '../../lib/utils'
+import { useAuth } from '../../lib/hooks/useAuth'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: '🏠' },

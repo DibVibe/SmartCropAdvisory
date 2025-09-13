@@ -4,10 +4,10 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useCropStore } from '../../lib1/store/cropStore'
+import { useCropStore } from '../../lib/store/cropStore'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
-import { formatCurrency } from '../../lib1/utils'
+import { formatCurrency } from '../../lib/utils'
 
 const soilDataSchema = z.object({
   pH: z.number().min(0).max(14),

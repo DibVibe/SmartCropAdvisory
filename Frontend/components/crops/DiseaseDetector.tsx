@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { useCropStore } from '../../lib1/store/cropStore'
+import { useCropStore } from '../../lib/store/cropStore'
 import Button from '@/components/ui/Button'
 import toast from 'react-hot-toast'
 

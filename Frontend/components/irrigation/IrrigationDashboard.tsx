@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { apiClient } from '../../lib1/api/client'
+import { apiClient } from '../../lib/api/client'
 import IrrigationSchedule from './IrrigationSchedule'
 import SoilMoistureChart from './SoilMoistureChart'
 import IrrigationControls from './IrrigationControls'

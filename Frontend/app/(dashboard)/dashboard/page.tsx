@@ -5,7 +5,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout'
 import DashboardStats from '@/components/dashboard/DashboardStats'
 import WeatherWidget from '@/components/dashboard/WeatherWidget'
 import RecentActivity from '@/components/dashboard/RecentActivity'
-import { apiClient } from '../../../lib1/api/client'
+import { apiClient } from '../../../lib/api/client'
 
 export default function DashboardPage() {
   const { data: stats, isLoading } = useQuery({

@@ -1,6 +1,6 @@
 'use client'
 
-import { formatCurrency } from '../../lib1/utils'
+import { formatCurrency } from '../../lib/utils'
 
 export default function CropPrices() {
   const crops = [

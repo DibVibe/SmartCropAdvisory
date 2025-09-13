@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useAuth } from '../lib1/hooks/useAuth'
+import { useAuth } from '../lib/hooks/useAuth'
 
 export default function HomePage() {
   const router = useRouter()

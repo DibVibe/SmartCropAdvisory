@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { apiClient } from '../../lib1/api/client'
+import { apiClient } from '../../lib/api/client'
 
 export default function WeatherWidget() {
   const { data: weather, isLoading } = useQuery({

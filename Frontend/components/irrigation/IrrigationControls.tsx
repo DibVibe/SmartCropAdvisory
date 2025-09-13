@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiClient } from '../../lib1/api/client'
+import { apiClient } from '../../lib/api/client'
 import Button from '@/components/ui/Button'
 import toast from 'react-hot-toast'
 

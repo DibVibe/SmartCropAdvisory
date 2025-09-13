@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useFieldStore } from '../../lib1/store/fieldStore'
+import { useFieldStore } from '../../lib/store/fieldStore'
 import Button from '@/components/ui/Button'
 import FieldCard from './FieldCard'
 import FieldForm from './FieldForm'
