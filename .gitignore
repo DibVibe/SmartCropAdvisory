@@ -1,13 +1,507 @@
-*.pyc
+# =====================================================
+# SmartCropAdvisory .gitignore
+# Django + MongoDB + ML + Redis + Celery Project
+# =====================================================
+
+# =====================================================
+# 🐍 PYTHON
+# =====================================================
+
+# Byte-compiled / optimized / DLL files
 __pycache__/
-db.sqlite3
-*.sqlite3
-.env
+*.py[cod]
+*$py.class
+*.so
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+.coverage
+coverage_html/
+coverage.xml
+
+# Virtual environments
 venv/
+ENV/
 env/
-staticfiles/
-media/
-.DS_Store
+.env/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# =====================================================
+# 🌐 DJANGO SPECIFIC
+# =====================================================
+
+# Django settings - Keep local/production configs private
+local_settings.py
+settings_local.py
+settings_production.py
+
+# Database files
+*.sqlite3
+*.db
+django_internal.sqlite3
+
+# Django migrations (uncomment if you want to ignore migrations)
+# */migrations/*.py
+# */migrations/*.pyc
+# !*/migrations/__init__.py
+
+# Django collected static files
+/staticfiles/
+/static/
+/Static/collected/
+
+# Django media files (uncomment if you don't want to track user uploads)
+/Media/
+/media/uploads/
+/media/cache/
+/media/temp/
+
+# Django cache
+django_cache/
+
+# Django sessions
+django_sessions/
+
+# Django logs
+django.log
+django_error.log
+
+# =====================================================
+# 🔐 ENVIRONMENT & SECRETS
+# =====================================================
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+.env.staging
+.env.test
+*.env
+.environment
+
+# Secret keys and API keys
+secrets.json
+api_keys.json
+credentials.json
+
+# SSL certificates
+*.key
+*.crt
+*.pem
+*.p12
+*.pfx
+
+# =====================================================
+# 🍃 MONGODB
+# =====================================================
+
+# MongoDB data directories
+/data/
+/data/db/
+/mongodb/
+mongo_data/
+
+# MongoDB logs
+mongod.log
+mongodb.log
+
+# MongoDB dump files
+*.bson
+mongodump/
+mongoexport/
+
+# =====================================================
+# 🔥 REDIS & CACHING
+# =====================================================
+
+# Redis data
+redis_data/
+redis.log
+dump.rdb
+appendonly.aof
+
+# General cache directories
+cache/
+.cache/
+tmp_cache/
+
+# =====================================================
+# 📝 LOGS & MONITORING
+# =====================================================
+
+# Application logs
+Logs/
+logs/
 *.log
-.idea/
+*.log.*
+log_*.txt
+
+# Specific log files
+django.log
+errors.log
+mongodb.log
+ml_operations.log
+api.log
+celery.log
+gunicorn.log
+nginx.log
+access.log
+error.log
+
+# Log directories
+/var/log/
+/logs/
+
+# =====================================================
+# 🧠 MACHINE LEARNING
+# =====================================================
+
+# ML Models (large files - use Git LFS if needed)
+Scripts/Models/*.h5
+Scripts/Models/*.pkl
+Scripts/Models/*.joblib
+Scripts/Models/*.model
+Scripts/Models/*.bin
+Scripts/Models/*.pt
+Scripts/Models/*.pth
+Scripts/Models/*.ckpt
+Scripts/Models/*.pb
+
+# ML Training data
+training_data/
+datasets/
+data/raw/
+data/processed/
+data/external/
+
+# ML Outputs
+model_outputs/
+predictions/
+results/
+experiments/
+mlruns/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+*.ipynb
+
+# TensorFlow
+*.tfrecord
+*.tfstate
+*.tfstate.*
+
+# PyTorch
+*.pth
+*.pt
+
+# Scikit-learn
+*.pkl
+*.joblib
+
+# =====================================================
+# 🔄 CELERY & TASK QUEUE
+# =====================================================
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+celery_worker.log
+celery_beat.log
+
+# Task results
+celery_results/
+
+# =====================================================
+# 📁 STATIC & MEDIA FILES
+# =====================================================
+
+# Collected static files
+/staticfiles/
+/collected_static/
+/assets/
+
+# Compressed files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Image cache
+thumbs/
+thumbnails/
+image_cache/
+
+# User uploads (uncomment if you don't want to track)
+# uploads/
+# user_files/
+
+# =====================================================
+# 🛠️ DEVELOPMENT TOOLS
+# =====================================================
+
+# IDE files
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# PyCharm
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Vim
+*.swp
+*.swo
+*.un~
+Session.vim
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# =====================================================
+# 🖥️ OPERATING SYSTEM
+# =====================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# =====================================================
+# 📦 PACKAGE MANAGERS
+# =====================================================
+
+# npm
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Bower
+bower_components/
+
+# =====================================================
+# 🧪 TESTING
+# =====================================================
+
+# Test outputs
+test_results/
+test_reports/
+htmlcov/
+.coverage.*
+coverage_html_report/
+
+# Selenium
+selenium_logs/
+chromedriver.log
+geckodriver.log
+
+# =====================================================
+# 🚀 DEPLOYMENT & PRODUCTION
+# =====================================================
+
+# Docker
+Dockerfile.local
+docker-compose.override.yml
+.dockerignore
+docker_data/
+
+# Deployment scripts
+deploy.sh
+deploy_local.sh
+
+# Production files
+gunicorn.conf.py
+nginx.conf
+supervisor.conf
+
+# SSL & Security
+ssl/
+certificates/
+private_keys/
+
+# =====================================================
+# 📊 MONITORING & PROFILING
+# =====================================================
+
+# Profiling
+.prof
+*.prof
+profile_stats/
+
+# Performance monitoring
+newrelic.ini
+.newrelic.yml
+
+# Error tracking
+sentry.conf
+
+# =====================================================
+# 🔧 TEMPORARY FILES
+# =====================================================
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.orig
+
+# Swap files
+*.swp
+*.swo
+
+# Lock files
+*.lock
+.lock
+pip-log.txt
+pip-delete-this-directory.txt
+
+# =====================================================
+# 📚 DOCUMENTATION
+# =====================================================
+
+# Generated documentation
+docs/_build/
+docs/.doctrees/
+site/
+
+# Sphinx
+_build/
+_static/
+_templates/
+
+# =====================================================
+# 🎯 PROJECT SPECIFIC
+# =====================================================
+
+# Agricultural data files (if you don't want to track large datasets)
+# agricultural_data/
+# weather_data/
+# satellite_images/
+# soil_samples/
+
+# Backup files
+*.backup
+backups/
+db_backups/
+
+# Configuration backups
+requirements_backup.txt
+settings_backup.py
+
+# Local development files
+local_*
+dev_*
+test_*
+
+# Custom scripts (uncomment if private)
+# custom_scripts/
+# personal_notes/
+# todo.txt
+# notes.md
+
+# =====================================================
+# 🔍 SEARCH & INDEX FILES
+# =====================================================
+
+# Search indexes
+search_indexes/
+whoosh_index/
+
+# Elasticsearch
+elasticsearch/
+
+# =====================================================
+# END OF .gitignore
+# =====================================================
+
+# Note: This .gitignore is comprehensive and may include
+# files/folders that don't exist in your project yet.
+# Feel free to remove sections that are not relevant.
