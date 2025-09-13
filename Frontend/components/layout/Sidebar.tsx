@@ -1,24 +1,24 @@
-"use client";
+'use client'
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { useAuth } from "@/lib/hooks/useAuth";
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { cn } from '../../lib1/utils'
+import { useAuth } from '../../lib1/hooks/useAuth'
 
 const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: "🏠" },
-  { name: "Fields", href: "/fields", icon: "🌾" },
-  { name: "Crop Analysis", href: "/crop-analysis", icon: "🔬" },
-  { name: "Weather", href: "/weather", icon: "🌤️" },
-  { name: "Irrigation", href: "/irrigation", icon: "💧" },
-  { name: "Market", href: "/market", icon: "📈" },
-  { name: "Advisory", href: "/advisory", icon: "💡" },
-  { name: "Reports", href: "/reports", icon: "📊" },
-];
+  { name: 'Dashboard', href: '/dashboard', icon: '🏠' },
+  { name: 'Fields', href: '/fields', icon: '🌾' },
+  { name: 'Crop Analysis', href: '/crop-analysis', icon: '🔬' },
+  { name: 'Weather', href: '/weather', icon: '🌤️' },
+  { name: 'Irrigation', href: '/irrigation', icon: '💧' },
+  { name: 'Market', href: '/market', icon: '📈' },
+  { name: 'Advisory', href: '/advisory', icon: '💡' },
+  { name: 'Reports', href: '/reports', icon: '📊' },
+]
 
 export default function Sidebar() {
-  const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const pathname = usePathname()
+  const { user, logout } = useAuth()
 
   return (
     <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg lg:block hidden">
@@ -32,10 +32,10 @@ export default function Sidebar() {
             key={item.name}
             href={item.href}
             className={cn(
-              "group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors",
+              'group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors',
               pathname === item.href
-                ? "bg-primary-100 text-primary-900"
-                : "text-gray-700 hover:bg-gray-50"
+                ? 'bg-primary-100 text-primary-900'
+                : 'text-gray-700 hover:bg-gray-50'
             )}
           >
             <span className="mr-3 text-lg">{item.icon}</span>
@@ -68,5 +68,5 @@ export default function Sidebar() {
         </button>
       </div>
     </div>
-  );
+  )
 }

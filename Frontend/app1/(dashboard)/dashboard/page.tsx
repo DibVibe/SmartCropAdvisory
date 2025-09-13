@@ -1,22 +1,22 @@
-"use client";
+'use client'
 
-import { useQuery } from "@tanstack/react-query";
-import DashboardLayout from "@/components/layout/DashboardLayout";
-import DashboardStats from "@/components/dashboard/DashboardStats";
-import WeatherWidget from "@/components/dashboard/WeatherWidget";
-import RecentActivity from "@/components/dashboard/RecentActivity";
-import { apiClient } from "@/lib/api/client";
+import { useQuery } from '@tanstack/react-query'
+import DashboardLayout from '@/components/layout/DashboardLayout'
+import DashboardStats from '@/components/dashboard/DashboardStats'
+import WeatherWidget from '@/components/dashboard/WeatherWidget'
+import RecentActivity from '@/components/dashboard/RecentActivity'
+import { apiClient } from '../../../lib1/api/client'
 
 export default function DashboardPage() {
   const { data: stats, isLoading } = useQuery({
-    queryKey: ["dashboard-stats"],
+    queryKey: ['dashboard-stats'],
     queryFn: async () => {
       const response = await apiClient.get(
-        "/advisory/api/advisory/farms/dashboard/"
-      );
-      return response.data;
+        '/advisory/api/advisory/farms/dashboard/'
+      )
+      return response.data
     },
-  });
+  })
 
   return (
     <DashboardLayout>
@@ -44,5 +44,5 @@ export default function DashboardPage() {
         </div>
       </div>
     </DashboardLayout>
-  );
+  )
 }

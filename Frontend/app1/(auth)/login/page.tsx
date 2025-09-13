@@ -1,26 +1,26 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useAuth } from "@/lib/hooks/useAuth";
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import Link from "next/link";
-import toast from "react-hot-toast";
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { useAuth } from '../../../lib1/hooks/useAuth'
+import Button from '@/components/ui/Button'
+import Input from '@/components/ui/Input'
+import Link from 'next/link'
+import toast from 'react-hot-toast'
 
 const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
-});
+  username: z.string().min(1, 'Username is required'),
+  password: z.string().min(1, 'Password is required'),
+})
 
-type LoginFormData = z.infer<typeof loginSchema>;
+type LoginFormData = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
-  const router = useRouter();
-  const { login, isLoading } = useAuth();
+  const router = useRouter()
+  const { login, isLoading } = useAuth()
 
   const {
     register,
@@ -28,17 +28,17 @@ export default function LoginPage() {
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
-  });
+  })
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      await login(data);
-      toast.success("Login successful!");
-      router.push("/dashboard");
+      await login(data)
+      toast.success('Login successful!')
+      router.push('/dashboard')
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Login failed");
+      toast.error(error.response?.data?.message || 'Login failed')
     }
-  };
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -48,7 +48,7 @@ export default function LoginPage() {
             Sign in to SmartCrop
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Or{" "}
+            Or{' '}
             <Link
               href="/register"
               className="font-medium text-primary-600 hover:text-primary-500"
@@ -62,7 +62,7 @@ export default function LoginPage() {
           <div className="space-y-4">
             <Input
               label="Username"
-              {...register("username")}
+              {...register('username')}
               error={errors.username?.message}
               autoComplete="username"
             />
@@ -70,7 +70,7 @@ export default function LoginPage() {
             <Input
               label="Password"
               type="password"
-              {...register("password")}
+              {...register('password')}
               error={errors.password?.message}
               autoComplete="current-password"
             />
@@ -87,5 +87,5 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
-  );
+  )
 }

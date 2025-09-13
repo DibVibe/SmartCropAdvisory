@@ -1,69 +1,69 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api/client";
-import Button from "@/components/ui/Button";
-import toast from "react-hot-toast";
+import { useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { apiClient } from '../../lib1/api/client'
+import Button from '@/components/ui/Button'
+import toast from 'react-hot-toast'
 
 export default function IrrigationControls() {
-  const [selectedField, setSelectedField] = useState("field-1");
-  const queryClient = useQueryClient();
+  const [selectedField, setSelectedField] = useState('field-1')
+  const queryClient = useQueryClient()
 
   const startIrrigationMutation = useMutation({
     mutationFn: async (fieldId: string) => {
       const response = await apiClient.post(
         `/irrigation/fields/${fieldId}/start/`
-      );
-      return response.data;
+      )
+      return response.data
     },
     onSuccess: () => {
-      toast.success("Irrigation started successfully");
-      queryClient.invalidateQueries(["irrigation-dashboard"]);
+      toast.success('Irrigation started successfully')
+      queryClient.invalidateQueries(['irrigation-dashboard'])
     },
     onError: () => {
-      toast.error("Failed to start irrigation");
+      toast.error('Failed to start irrigation')
     },
-  });
+  })
 
   const stopIrrigationMutation = useMutation({
     mutationFn: async (fieldId: string) => {
       const response = await apiClient.post(
         `/irrigation/fields/${fieldId}/stop/`
-      );
-      return response.data;
+      )
+      return response.data
     },
     onSuccess: () => {
-      toast.success("Irrigation stopped successfully");
-      queryClient.invalidateQueries(["irrigation-dashboard"]);
+      toast.success('Irrigation stopped successfully')
+      queryClient.invalidateQueries(['irrigation-dashboard'])
     },
     onError: () => {
-      toast.error("Failed to stop irrigation");
+      toast.error('Failed to stop irrigation')
     },
-  });
+  })
 
   const fields = [
-    { id: "field-1", name: "Field A - Wheat", status: "idle", moisture: 68 },
-    { id: "field-2", name: "Field B - Rice", status: "active", moisture: 82 },
-    { id: "field-3", name: "Field C - Cotton", status: "idle", moisture: 45 },
-  ];
+    { id: 'field-1', name: 'Field A - Wheat', status: 'idle', moisture: 68 },
+    { id: 'field-2', name: 'Field B - Rice', status: 'active', moisture: 82 },
+    { id: 'field-3', name: 'Field C - Cotton', status: 'idle', moisture: 45 },
+  ]
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "active":
-        return "text-green-600 bg-green-50";
-      case "scheduled":
-        return "text-yellow-600 bg-yellow-50";
+      case 'active':
+        return 'text-green-600 bg-green-50'
+      case 'scheduled':
+        return 'text-yellow-600 bg-yellow-50'
       default:
-        return "text-gray-600 bg-gray-50";
+        return 'text-gray-600 bg-gray-50'
     }
-  };
+  }
 
   const getMoistureColor = (moisture: number) => {
-    if (moisture > 70) return "text-green-600";
-    if (moisture > 50) return "text-yellow-600";
-    return "text-red-600";
-  };
+    if (moisture > 70) return 'text-green-600'
+    if (moisture > 50) return 'text-yellow-600'
+    return 'text-red-600'
+  }
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -121,7 +121,7 @@ export default function IrrigationControls() {
               </div>
 
               <div className="flex space-x-2 ml-4">
-                {field.status === "idle" ? (
+                {field.status === 'idle' ? (
                   <Button
                     size="sm"
                     onClick={() => startIrrigationMutation.mutate(field.id)}
@@ -160,5 +160,5 @@ export default function IrrigationControls() {
         </div>
       </div>
     </div>
-  );
+  )
 }

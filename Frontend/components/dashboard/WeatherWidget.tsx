@@ -1,17 +1,17 @@
-"use client";
+'use client'
 
-import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api/client";
+import { useQuery } from '@tanstack/react-query'
+import { apiClient } from '../../lib1/api/client'
 
 export default function WeatherWidget() {
   const { data: weather, isLoading } = useQuery({
-    queryKey: ["weather"],
+    queryKey: ['weather'],
     queryFn: async () => {
-      const response = await apiClient.get("/weather/current/");
-      return response.data;
+      const response = await apiClient.get('/weather/current/')
+      return response.data
     },
     refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
-  });
+  })
 
   if (isLoading) {
     return (
@@ -22,7 +22,7 @@ export default function WeatherWidget() {
           <div className="h-4 bg-gray-200 rounded w-3/4"></div>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -36,17 +36,17 @@ export default function WeatherWidget() {
               {weather?.temperature || 25}°C
             </p>
             <p className="text-sm text-gray-500 capitalize">
-              {weather?.condition || "Partly cloudy"}
+              {weather?.condition || 'Partly cloudy'}
             </p>
           </div>
           <div className="text-4xl">
-            {weather?.condition === "sunny"
-              ? "☀️"
-              : weather?.condition === "rainy"
-              ? "🌧️"
-              : weather?.condition === "cloudy"
-              ? "☁️"
-              : "🌤️"}
+            {weather?.condition === 'sunny'
+              ? '☀️'
+              : weather?.condition === 'rainy'
+                ? '🌧️'
+                : weather?.condition === 'cloudy'
+                  ? '☁️'
+                  : '🌤️'}
           </div>
         </div>
 
@@ -83,5 +83,5 @@ export default function WeatherWidget() {
         )}
       </div>
     </div>
-  );
+  )
 }

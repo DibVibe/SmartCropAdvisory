@@ -1,13 +1,13 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useCropStore } from "@/lib/store/cropStore";
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import { formatCurrency } from "@/lib/utils";
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { useCropStore } from '../../lib1/store/cropStore'
+import Button from '@/components/ui/Button'
+import Input from '@/components/ui/Input'
+import { formatCurrency } from '../../lib1/utils'
 
 const soilDataSchema = z.object({
   pH: z.number().min(0).max(14),
@@ -17,14 +17,14 @@ const soilDataSchema = z.object({
   organic_matter: z.number().min(0).max(100),
   moisture: z.number().min(0).max(100),
   temperature: z.number(),
-  location: z.string().min(1, "Location is required"),
-  season: z.enum(["kharif", "rabi", "summer"]),
-});
+  location: z.string().min(1, 'Location is required'),
+  season: z.enum(['kharif', 'rabi', 'summer']),
+})
 
-type SoilDataForm = z.infer<typeof soilDataSchema>;
+type SoilDataForm = z.infer<typeof soilDataSchema>
 
 export default function CropRecommendations() {
-  const { recommendations, getRecommendations, isLoading } = useCropStore();
+  const { recommendations, getRecommendations, isLoading } = useCropStore()
 
   const {
     register,
@@ -33,23 +33,23 @@ export default function CropRecommendations() {
   } = useForm<SoilDataForm>({
     resolver: zodResolver(soilDataSchema),
     defaultValues: {
-      season: "kharif",
+      season: 'kharif',
     },
-  });
+  })
 
   const onSubmit = async (data: SoilDataForm) => {
     try {
-      await getRecommendations(data);
+      await getRecommendations(data)
     } catch (error) {
-      console.error("Failed to get recommendations:", error);
+      console.error('Failed to get recommendations:', error)
     }
-  };
+  }
 
   const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 80) return "text-green-600 bg-green-50";
-    if (confidence >= 60) return "text-yellow-600 bg-yellow-50";
-    return "text-red-600 bg-red-50";
-  };
+    if (confidence >= 80) return 'text-green-600 bg-green-50'
+    if (confidence >= 60) return 'text-yellow-600 bg-yellow-50'
+    return 'text-red-600 bg-red-50'
+  }
 
   return (
     <div className="space-y-6">
@@ -62,28 +62,28 @@ export default function CropRecommendations() {
               label="pH Level"
               type="number"
               step="0.1"
-              {...register("pH", { valueAsNumber: true })}
+              {...register('pH', { valueAsNumber: true })}
               error={errors.pH?.message}
             />
 
             <Input
               label="Nitrogen (N) mg/kg"
               type="number"
-              {...register("nitrogen", { valueAsNumber: true })}
+              {...register('nitrogen', { valueAsNumber: true })}
               error={errors.nitrogen?.message}
             />
 
             <Input
               label="Phosphorus (P) mg/kg"
               type="number"
-              {...register("phosphorus", { valueAsNumber: true })}
+              {...register('phosphorus', { valueAsNumber: true })}
               error={errors.phosphorus?.message}
             />
 
             <Input
               label="Potassium (K) mg/kg"
               type="number"
-              {...register("potassium", { valueAsNumber: true })}
+              {...register('potassium', { valueAsNumber: true })}
               error={errors.potassium?.message}
             />
 
@@ -91,7 +91,7 @@ export default function CropRecommendations() {
               label="Organic Matter (%)"
               type="number"
               step="0.1"
-              {...register("organic_matter", { valueAsNumber: true })}
+              {...register('organic_matter', { valueAsNumber: true })}
               error={errors.organic_matter?.message}
             />
 
@@ -99,20 +99,20 @@ export default function CropRecommendations() {
               label="Soil Moisture (%)"
               type="number"
               step="0.1"
-              {...register("moisture", { valueAsNumber: true })}
+              {...register('moisture', { valueAsNumber: true })}
               error={errors.moisture?.message}
             />
 
             <Input
               label="Temperature (°C)"
               type="number"
-              {...register("temperature", { valueAsNumber: true })}
+              {...register('temperature', { valueAsNumber: true })}
               error={errors.temperature?.message}
             />
 
             <Input
               label="Location"
-              {...register("location")}
+              {...register('location')}
               error={errors.location?.message}
               placeholder="e.g., Punjab, India"
             />
@@ -122,7 +122,7 @@ export default function CropRecommendations() {
                 Season
               </label>
               <select
-                {...register("season")}
+                {...register('season')}
                 className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               >
                 <option value="kharif">Kharif (Monsoon)</option>
@@ -209,5 +209,5 @@ export default function CropRecommendations() {
         </div>
       )}
     </div>
-  );
+  )
 }

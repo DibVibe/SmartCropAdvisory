@@ -1,35 +1,35 @@
-"use client";
+'use client'
 
-import { ReactNode, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Sidebar from "./Sidebar";
-import Header from "./Header";
-import { useAuth } from "@/lib/hooks/useAuth";
+import { ReactNode, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import Sidebar from './Sidebar'
+import Header from './Header'
+import { useAuth } from '../../lib1/hooks/useAuth'
 
 interface DashboardLayoutProps {
-  children: ReactNode;
+  children: ReactNode
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { isAuthenticated, isLoading } = useAuth();
-  const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuth()
+  const router = useRouter()
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push("/login");
+      router.push('/login')
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, router])
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
       </div>
-    );
+    )
   }
 
   if (!isAuthenticated) {
-    return null;
+    return null
   }
 
   return (
@@ -40,5 +40,5 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <main className="py-6 px-4 sm:px-6 lg:px-8">{children}</main>
       </div>
     </div>
-  );
+  )
 }

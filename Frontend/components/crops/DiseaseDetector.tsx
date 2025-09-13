@@ -1,56 +1,56 @@
-"use client";
+'use client'
 
-import { useState, useCallback } from "react";
-import { useDropzone } from "react-dropzone";
-import { useCropStore } from "@/lib/store/cropStore";
-import Button from "@/components/ui/Button";
-import toast from "react-hot-toast";
+import { useState, useCallback } from 'react'
+import { useDropzone } from 'react-dropzone'
+import { useCropStore } from '../../lib1/store/cropStore'
+import Button from '@/components/ui/Button'
+import toast from 'react-hot-toast'
 
 export default function DiseaseDetector() {
-  const [preview, setPreview] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(null)
   const { detectDisease, diseaseResults, isAnalyzing, clearDiseaseResults } =
-    useCropStore();
+    useCropStore()
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
-      const file = acceptedFiles[0];
+      const file = acceptedFiles[0]
       if (file) {
-        setPreview(URL.createObjectURL(file));
+        setPreview(URL.createObjectURL(file))
         try {
-          await detectDisease(file);
-          toast.success("Analysis complete!");
+          await detectDisease(file)
+          toast.success('Analysis complete!')
         } catch (error) {
-          toast.error("Analysis failed. Please try again.");
+          toast.error('Analysis failed. Please try again.')
         }
       }
     },
     [detectDisease]
-  );
+  )
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { "image/*": [] },
+    accept: { 'image/*': [] },
     maxFiles: 1,
     maxSize: 5 * 1024 * 1024, // 5MB
-  });
+  })
 
   const reset = () => {
-    setPreview(null);
-    clearDiseaseResults();
-  };
+    setPreview(null)
+    clearDiseaseResults()
+  }
 
   const getSeverityColor = (severity?: string) => {
     switch (severity) {
-      case "high":
-        return "text-red-600 bg-red-50";
-      case "medium":
-        return "text-yellow-600 bg-yellow-50";
-      case "low":
-        return "text-green-600 bg-green-50";
+      case 'high':
+        return 'text-red-600 bg-red-50'
+      case 'medium':
+        return 'text-yellow-600 bg-yellow-50'
+      case 'low':
+        return 'text-green-600 bg-green-50'
       default:
-        return "text-gray-600 bg-gray-50";
+        return 'text-gray-600 bg-gray-50'
     }
-  };
+  }
 
   return (
     <div className="space-y-6">
@@ -61,8 +61,8 @@ export default function DiseaseDetector() {
           {...getRootProps()}
           className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
             isDragActive
-              ? "border-primary-500 bg-primary-50"
-              : "border-gray-300 hover:border-primary-400"
+              ? 'border-primary-500 bg-primary-50'
+              : 'border-gray-300 hover:border-primary-400'
           }`}
         >
           <input {...getInputProps()} />
@@ -97,7 +97,7 @@ export default function DiseaseDetector() {
               </div>
               <div>
                 <p className="text-lg font-medium text-gray-900">
-                  {isDragActive ? "Drop image here" : "Upload crop image"}
+                  {isDragActive ? 'Drop image here' : 'Upload crop image'}
                 </p>
                 <p className="text-sm text-gray-500">
                   Drag and drop or click to select. Max 5MB.
@@ -120,7 +120,7 @@ export default function DiseaseDetector() {
           <div className="mt-6 bg-gray-50 rounded-lg p-6">
             <h3 className="text-lg font-semibold mb-4 flex items-center">
               <span className="text-2xl mr-2">
-                {diseaseResults.is_healthy ? "✅" : "⚠️"}
+                {diseaseResults.is_healthy ? '✅' : '⚠️'}
               </span>
               Analysis Results
             </h3>
@@ -134,11 +134,11 @@ export default function DiseaseDetector() {
                   <span
                     className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
                       diseaseResults.is_healthy
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
                     }`}
                   >
-                    {diseaseResults.is_healthy ? "Healthy" : "Disease Detected"}
+                    {diseaseResults.is_healthy ? 'Healthy' : 'Disease Detected'}
                   </span>
                 </div>
 
@@ -205,5 +205,5 @@ export default function DiseaseDetector() {
         )}
       </div>
     </div>
-  );
+  )
 }

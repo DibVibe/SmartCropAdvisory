@@ -1,29 +1,29 @@
-"use client";
+'use client'
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useFieldStore } from "@/lib/store/fieldStore";
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import Modal from "@/components/ui/Modal";
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { useFieldStore } from '../../lib1/store/fieldStore'
+import Button from '@/components/ui/Button'
+import Input from '@/components/ui/Input'
+import Modal from '@/components/ui/Modal'
 
 const fieldSchema = z.object({
-  name: z.string().min(1, "Field name is required"),
-  area: z.number().min(0.1, "Area must be greater than 0"),
-  cropType: z.string().min(1, "Crop type is required"),
+  name: z.string().min(1, 'Field name is required'),
+  area: z.number().min(0.1, 'Area must be greater than 0'),
+  cropType: z.string().min(1, 'Crop type is required'),
   soilType: z.string().optional(),
   irrigationType: z.string().optional(),
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
-});
+})
 
-type FieldFormData = z.infer<typeof fieldSchema>;
+type FieldFormData = z.infer<typeof fieldSchema>
 
 interface FieldFormProps {
-  onClose: () => void;
-  onSuccess: () => void;
-  field?: any;
+  onClose: () => void
+  onSuccess: () => void
+  field?: any
 }
 
 export default function FieldForm({
@@ -31,8 +31,8 @@ export default function FieldForm({
   onSuccess,
   field,
 }: FieldFormProps) {
-  const { addField, updateField, isLoading } = useFieldStore();
-  const isEditing = !!field;
+  const { addField, updateField, isLoading } = useFieldStore()
+  const isEditing = !!field
 
   const {
     register,
@@ -44,57 +44,57 @@ export default function FieldForm({
       latitude: 28.6139, // Default to Delhi
       longitude: 77.209,
     },
-  });
+  })
 
   const onSubmit = async (data: FieldFormData) => {
     try {
       if (isEditing) {
-        await updateField(field.id, data);
+        await updateField(field.id, data)
       } else {
-        await addField(data);
+        await addField(data)
       }
-      onSuccess();
+      onSuccess()
     } catch (error) {
-      console.error("Failed to save field:", error);
+      console.error('Failed to save field:', error)
     }
-  };
+  }
 
   const cropTypes = [
-    "wheat",
-    "rice",
-    "corn",
-    "sugarcane",
-    "cotton",
-    "soybean",
-    "potato",
-    "tomato",
-    "onion",
-    "cabbage",
-    "cauliflower",
-  ];
+    'wheat',
+    'rice',
+    'corn',
+    'sugarcane',
+    'cotton',
+    'soybean',
+    'potato',
+    'tomato',
+    'onion',
+    'cabbage',
+    'cauliflower',
+  ]
 
   const soilTypes = [
-    "alluvial",
-    "black",
-    "red",
-    "laterite",
-    "desert",
-    "mountain",
-  ];
+    'alluvial',
+    'black',
+    'red',
+    'laterite',
+    'desert',
+    'mountain',
+  ]
 
-  const irrigationTypes = ["drip", "sprinkler", "flood", "furrow", "none"];
+  const irrigationTypes = ['drip', 'sprinkler', 'flood', 'furrow', 'none']
 
   return (
     <Modal
       isOpen
       onClose={onClose}
-      title={isEditing ? "Edit Field" : "Add New Field"}
+      title={isEditing ? 'Edit Field' : 'Add New Field'}
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
             label="Field Name"
-            {...register("name")}
+            {...register('name')}
             error={errors.name?.message}
             placeholder="e.g., North Field"
           />
@@ -103,7 +103,7 @@ export default function FieldForm({
             label="Area (acres)"
             type="number"
             step="0.1"
-            {...register("area", { valueAsNumber: true })}
+            {...register('area', { valueAsNumber: true })}
             error={errors.area?.message}
           />
         </div>
@@ -114,7 +114,7 @@ export default function FieldForm({
               Crop Type
             </label>
             <select
-              {...register("cropType")}
+              {...register('cropType')}
               className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             >
               <option value="">Select crop type</option>
@@ -136,7 +136,7 @@ export default function FieldForm({
               Soil Type
             </label>
             <select
-              {...register("soilType")}
+              {...register('soilType')}
               className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             >
               <option value="">Select soil type</option>
@@ -154,7 +154,7 @@ export default function FieldForm({
             Irrigation Type
           </label>
           <select
-            {...register("irrigationType")}
+            {...register('irrigationType')}
             className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
           >
             <option value="">Select irrigation type</option>
@@ -171,7 +171,7 @@ export default function FieldForm({
             label="Latitude"
             type="number"
             step="0.000001"
-            {...register("latitude", { valueAsNumber: true })}
+            {...register('latitude', { valueAsNumber: true })}
             error={errors.latitude?.message}
           />
 
@@ -179,7 +179,7 @@ export default function FieldForm({
             label="Longitude"
             type="number"
             step="0.000001"
-            {...register("longitude", { valueAsNumber: true })}
+            {...register('longitude', { valueAsNumber: true })}
             error={errors.longitude?.message}
           />
         </div>
@@ -189,10 +189,10 @@ export default function FieldForm({
             Cancel
           </Button>
           <Button type="submit" isLoading={isLoading}>
-            {isEditing ? "Update Field" : "Add Field"}
+            {isEditing ? 'Update Field' : 'Add Field'}
           </Button>
         </div>
       </form>
     </Modal>
-  );
+  )
 }

@@ -1,65 +1,65 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { formatDate } from "@/lib/utils";
+import { useState } from 'react'
+import { formatDate } from '../../lib1/utils'
 
 export default function IrrigationSchedule() {
   const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
+    new Date().toISOString().split('T')[0]
+  )
 
   const schedules = [
     {
       id: 1,
-      field: "Field A - Wheat",
-      time: "06:00",
-      duration: "45 min",
-      status: "completed",
-      waterAmount: "250L",
+      field: 'Field A - Wheat',
+      time: '06:00',
+      duration: '45 min',
+      status: 'completed',
+      waterAmount: '250L',
     },
     {
       id: 2,
-      field: "Field B - Rice",
-      time: "07:30",
-      duration: "60 min",
-      status: "active",
-      waterAmount: "400L",
+      field: 'Field B - Rice',
+      time: '07:30',
+      duration: '60 min',
+      status: 'active',
+      waterAmount: '400L',
     },
     {
       id: 3,
-      field: "Field C - Cotton",
-      time: "18:00",
-      duration: "30 min",
-      status: "scheduled",
-      waterAmount: "180L",
+      field: 'Field C - Cotton',
+      time: '18:00',
+      duration: '30 min',
+      status: 'scheduled',
+      waterAmount: '180L',
     },
-  ];
+  ]
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "completed":
-        return "✅";
-      case "active":
-        return "🔄";
-      case "scheduled":
-        return "⏰";
+      case 'completed':
+        return '✅'
+      case 'active':
+        return '🔄'
+      case 'scheduled':
+        return '⏰'
       default:
-        return "⏸️";
+        return '⏸️'
     }
-  };
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "completed":
-        return "text-green-600";
-      case "active":
-        return "text-blue-600";
-      case "scheduled":
-        return "text-yellow-600";
+      case 'completed':
+        return 'text-green-600'
+      case 'active':
+        return 'text-blue-600'
+      case 'scheduled':
+        return 'text-yellow-600'
       default:
-        return "text-gray-600";
+        return 'text-gray-600'
     }
-  };
+  }
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -119,5 +119,5 @@ export default function IrrigationSchedule() {
         </div>
       </div>
     </div>
-  );
+  )
 }

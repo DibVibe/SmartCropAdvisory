@@ -1,36 +1,36 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useAuth } from "@/lib/hooks/useAuth";
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import Link from "next/link";
-import toast from "react-hot-toast";
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { useAuth } from '../../../lib1/hooks/useAuth'
+import Button from '@/components/ui/Button'
+import Input from '@/components/ui/Input'
+import Link from 'next/link'
+import toast from 'react-hot-toast'
 
 const registerSchema = z
   .object({
-    username: z.string().min(3, "Username must be at least 3 characters"),
-    email: z.string().email("Invalid email address"),
-    password: z.string().min(8, "Password must be at least 8 characters"),
+    username: z.string().min(3, 'Username must be at least 3 characters'),
+    email: z.string().email('Invalid email address'),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
     confirmPassword: z.string(),
-    phoneNumber: z.string().min(10, "Phone number must be at least 10 digits"),
-    userType: z.enum(["farmer", "expert", "admin"]),
+    phoneNumber: z.string().min(10, 'Phone number must be at least 10 digits'),
+    userType: z.enum(['farmer', 'expert', 'admin']),
     farmSize: z.number().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
-    path: ["confirmPassword"],
-  });
+    path: ['confirmPassword'],
+  })
 
-type RegisterFormData = z.infer<typeof registerSchema>;
+type RegisterFormData = z.infer<typeof registerSchema>
 
 export default function RegisterPage() {
-  const router = useRouter();
-  const { register: registerUser, isLoading } = useAuth();
+  const router = useRouter()
+  const { register: registerUser, isLoading } = useAuth()
 
   const {
     register,
@@ -40,15 +40,15 @@ export default function RegisterPage() {
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      userType: "farmer",
+      userType: 'farmer',
     },
-  });
+  })
 
-  const userType = watch("userType");
+  const userType = watch('userType')
 
   const onSubmit = async (data: RegisterFormData) => {
     try {
-      const { confirmPassword, ...registerData } = data;
+      const { confirmPassword, ...registerData } = data
       await registerUser({
         ...registerData,
         profile: {
@@ -56,13 +56,13 @@ export default function RegisterPage() {
           phoneNumber: data.phoneNumber,
           farmSize: data.farmSize,
         },
-      });
-      toast.success("Registration successful!");
-      router.push("/dashboard");
+      })
+      toast.success('Registration successful!')
+      router.push('/dashboard')
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Registration failed");
+      toast.error(error.response?.data?.message || 'Registration failed')
     }
-  };
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -72,7 +72,7 @@ export default function RegisterPage() {
             Create your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Or{" "}
+            Or{' '}
             <Link
               href="/login"
               className="font-medium text-primary-600 hover:text-primary-500"
@@ -86,34 +86,34 @@ export default function RegisterPage() {
           <div className="space-y-4">
             <Input
               label="Username"
-              {...register("username")}
+              {...register('username')}
               error={errors.username?.message}
             />
 
             <Input
               label="Email"
               type="email"
-              {...register("email")}
+              {...register('email')}
               error={errors.email?.message}
             />
 
             <Input
               label="Password"
               type="password"
-              {...register("password")}
+              {...register('password')}
               error={errors.password?.message}
             />
 
             <Input
               label="Confirm Password"
               type="password"
-              {...register("confirmPassword")}
+              {...register('confirmPassword')}
               error={errors.confirmPassword?.message}
             />
 
             <Input
               label="Phone Number"
-              {...register("phoneNumber")}
+              {...register('phoneNumber')}
               error={errors.phoneNumber?.message}
             />
 
@@ -122,7 +122,7 @@ export default function RegisterPage() {
                 User Type
               </label>
               <select
-                {...register("userType")}
+                {...register('userType')}
                 className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               >
                 <option value="farmer">Farmer</option>
@@ -131,11 +131,11 @@ export default function RegisterPage() {
               </select>
             </div>
 
-            {userType === "farmer" && (
+            {userType === 'farmer' && (
               <Input
                 label="Farm Size (acres)"
                 type="number"
-                {...register("farmSize", { valueAsNumber: true })}
+                {...register('farmSize', { valueAsNumber: true })}
                 error={errors.farmSize?.message}
               />
             )}
@@ -152,5 +152,5 @@ export default function RegisterPage() {
         </form>
       </div>
     </div>
-  );
+  )
 }

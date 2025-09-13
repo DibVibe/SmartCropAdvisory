@@ -1,9 +1,9 @@
-"use client";
+'use client'
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
-import { Toaster } from "react-hot-toast";
-import { useAuth } from "@/lib/hooks/useAuth";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { useState, useEffect } from 'react'
+import { Toaster } from 'react-hot-toast'
+import { useAuth } from '../lib1/hooks/useAuth'
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -18,18 +18,18 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           },
         },
       })
-  );
+  )
 
-  const { checkAuth } = useAuth();
+  const { checkAuth } = useAuth()
 
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+    checkAuth()
+  }, [checkAuth])
 
   return (
     <QueryClientProvider client={queryClient}>
       {children}
       <Toaster position="top-right" />
     </QueryClientProvider>
-  );
+  )
 }

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { authApi } from '@/lib/api/auth'
-import { User, LoginCredentials, RegisterData } from '@/lib/types'
+import { authApi } from '../api/auth'
+import { User, LoginCredentials, RegisterData } from '../types'
 import toast from 'react-hot-toast'
 
 interface AuthState {

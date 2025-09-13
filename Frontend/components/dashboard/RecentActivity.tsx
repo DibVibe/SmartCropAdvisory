@@ -1,43 +1,43 @@
-"use client";
+'use client'
 
-import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api/client";
-import { formatDate } from "@/lib/utils";
+import { useQuery } from '@tanstack/react-query'
+import { apiClient } from '../../lib1/api/client'
+import { formatDate } from '../../lib1/utils'
 
 export default function RecentActivity() {
   const { data: activities, isLoading } = useQuery({
-    queryKey: ["recent-activities"],
+    queryKey: ['recent-activities'],
     queryFn: async () => {
-      const response = await apiClient.get("/activities/recent/");
-      return response.data;
+      const response = await apiClient.get('/activities/recent/')
+      return response.data
     },
-  });
+  })
 
   const mockActivities = [
     {
       id: 1,
-      type: "crop_analysis",
-      description: "Disease detected in Field A - Wheat crop",
+      type: 'crop_analysis',
+      description: 'Disease detected in Field A - Wheat crop',
       timestamp: new Date().toISOString(),
-      status: "warning",
+      status: 'warning',
     },
     {
       id: 2,
-      type: "irrigation",
-      description: "Irrigation cycle completed for Field B",
+      type: 'irrigation',
+      description: 'Irrigation cycle completed for Field B',
       timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      status: "success",
+      status: 'success',
     },
     {
       id: 3,
-      type: "weather",
-      description: "Weather alert: Heavy rain expected tomorrow",
+      type: 'weather',
+      description: 'Weather alert: Heavy rain expected tomorrow',
       timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-      status: "info",
+      status: 'info',
     },
-  ];
+  ]
 
-  const displayActivities = activities || mockActivities;
+  const displayActivities = activities || mockActivities
 
   if (isLoading) {
     return (
@@ -54,36 +54,36 @@ export default function RecentActivity() {
           ))}
         </div>
       </div>
-    );
+    )
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "success":
-        return "text-green-500";
-      case "warning":
-        return "text-yellow-500";
-      case "error":
-        return "text-red-500";
+      case 'success':
+        return 'text-green-500'
+      case 'warning':
+        return 'text-yellow-500'
+      case 'error':
+        return 'text-red-500'
       default:
-        return "text-blue-500";
+        return 'text-blue-500'
     }
-  };
+  }
 
   const getStatusIcon = (type: string) => {
     switch (type) {
-      case "crop_analysis":
-        return "🔬";
-      case "irrigation":
-        return "💧";
-      case "weather":
-        return "🌤️";
-      case "market":
-        return "📈";
+      case 'crop_analysis':
+        return '🔬'
+      case 'irrigation':
+        return '💧'
+      case 'weather':
+        return '🌤️'
+      case 'market':
+        return '📈'
       default:
-        return "📝";
+        return '📝'
     }
-  };
+  }
 
   return (
     <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
@@ -134,5 +134,5 @@ export default function RecentActivity() {
         </ul>
       </div>
     </div>
-  );
+  )
 }

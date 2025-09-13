@@ -1,12 +1,12 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useAuth } from "@/lib/hooks/useAuth";
-import Button from "@/components/ui/Button";
+import { useState } from 'react'
+import { useAuth } from '../../lib1/hooks/useAuth'
+import Button from '@/components/ui/Button'
 
 export default function Header() {
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const { user, logout } = useAuth();
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
+  const { user, logout } = useAuth()
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -76,5 +76,5 @@ export default function Header() {
         </div>
       </div>
     </header>
-  );
+  )
 }

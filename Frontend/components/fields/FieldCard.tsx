@@ -1,9 +1,9 @@
-import { Field } from "@/lib/types";
-import { formatDate } from "@/lib/utils";
+import { Field } from '../../lib1/types'
+import { formatDate } from '../../lib1/utils'
 
 interface FieldCardProps {
-  field: Field;
-  onClick: () => void;
+  field: Field
+  onClick: () => void
 }
 
 export default function FieldCard({ field, onClick }: FieldCardProps) {
@@ -58,5 +58,5 @@ export default function FieldCard({ field, onClick }: FieldCardProps) {
         </div>
       </div>
     </div>
-  );
+  )
 }

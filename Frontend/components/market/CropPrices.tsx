@@ -1,16 +1,16 @@
-"use client";
+'use client'
 
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency } from '../../lib1/utils'
 
 export default function CropPrices() {
   const crops = [
-    { name: "Wheat", price: 2280, change: 0.9, volume: "1.3K quintals" },
-    { name: "Rice", price: 3380, change: -0.6, volume: "820 quintals" },
-    { name: "Cotton", price: 5650, change: 2.3, volume: "650 quintals" },
-    { name: "Sugarcane", price: 340, change: 1.5, volume: "2.1K quintals" },
-    { name: "Soybean", price: 4200, change: -1.2, volume: "950 quintals" },
-    { name: "Maize", price: 1850, change: 0.7, volume: "1.1K quintals" },
-  ];
+    { name: 'Wheat', price: 2280, change: 0.9, volume: '1.3K quintals' },
+    { name: 'Rice', price: 3380, change: -0.6, volume: '820 quintals' },
+    { name: 'Cotton', price: 5650, change: 2.3, volume: '650 quintals' },
+    { name: 'Sugarcane', price: 340, change: 1.5, volume: '2.1K quintals' },
+    { name: 'Soybean', price: 4200, change: -1.2, volume: '950 quintals' },
+    { name: 'Maize', price: 1850, change: 0.7, volume: '1.1K quintals' },
+  ]
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -35,10 +35,10 @@ export default function CropPrices() {
               </p>
               <div
                 className={`text-sm ${
-                  crop.change >= 0 ? "text-green-600" : "text-red-600"
+                  crop.change >= 0 ? 'text-green-600' : 'text-red-600'
                 }`}
               >
-                {crop.change >= 0 ? "↗" : "↘"} {Math.abs(crop.change)}%
+                {crop.change >= 0 ? '↗' : '↘'} {Math.abs(crop.change)}%
               </div>
             </div>
           </div>
@@ -54,5 +54,5 @@ export default function CropPrices() {
         </div>
       </div>
     </div>
-  );
+  )
 }

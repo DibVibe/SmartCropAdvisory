@@ -1,28 +1,28 @@
-"use client";
+'use client'
 
-import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api/client";
-import IrrigationSchedule from "./IrrigationSchedule";
-import SoilMoistureChart from "./SoilMoistureChart";
-import IrrigationControls from "./IrrigationControls";
+import { useQuery } from '@tanstack/react-query'
+import { apiClient } from '../../lib1/api/client'
+import IrrigationSchedule from './IrrigationSchedule'
+import SoilMoistureChart from './SoilMoistureChart'
+import IrrigationControls from './IrrigationControls'
 
 export default function IrrigationDashboard() {
   const { data: irrigationData, isLoading } = useQuery({
-    queryKey: ["irrigation-dashboard"],
+    queryKey: ['irrigation-dashboard'],
     queryFn: async () => {
-      const response = await apiClient.get("/irrigation/dashboard/");
-      return response.data;
+      const response = await apiClient.get('/irrigation/dashboard/')
+      return response.data
     },
-  });
+  })
 
   const { data: soilMoisture } = useQuery({
-    queryKey: ["soil-moisture"],
+    queryKey: ['soil-moisture'],
     queryFn: async () => {
-      const response = await apiClient.get("/irrigation/soil-moisture/");
-      return response.data;
+      const response = await apiClient.get('/irrigation/soil-moisture/')
+      return response.data
     },
     refetchInterval: 5 * 60 * 1000, // 5 minutes
-  });
+  })
 
   return (
     <div className="space-y-6">
@@ -103,5 +103,5 @@ export default function IrrigationDashboard() {
 
       <SoilMoistureChart data={soilMoisture} />
     </div>
-  );
+  )
 }
