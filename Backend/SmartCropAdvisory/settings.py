@@ -6,6 +6,15 @@ Django settings for SmartCropAdvisory project.
 📊 Production-ready configuration with enhanced performance
 """
 
+# Suppress specific warnings from dependencies
+import warnings
+
+warnings.filterwarnings("ignore", category=UserWarning, module="pkg_resources")
+warnings.filterwarnings(
+    "ignore", category=UserWarning, module="rest_framework_simplejwt"
+)
+
+# Standard library imports
 import sys
 from pathlib import Path
 from decouple import config, Csv
@@ -257,27 +266,17 @@ MONGODB_SETTINGS = {
 # MongoDB URI Connection String Support
 MONGODB_URI = config("MONGODB_URI", default="")
 if MONGODB_URI:
-    # Use connection string if provided (overrides individual settings)
     mongoengine.connect(host=MONGODB_URI, connect=False, tz_aware=True)
-    print(f"🍃 Connected to MongoDB using URI")
 else:
-    # Connect using individual settings
     if MONGODB_SETTINGS["username"] and MONGODB_SETTINGS["password"]:
         mongoengine.connect(**MONGODB_SETTINGS)
-        print(
-            f"🍃 Connected to MongoDB: {MONGODB_SETTINGS['host']}:{MONGODB_SETTINGS['port']}/{MONGODB_SETTINGS['db']}"
-        )
     else:
-        # Connect without authentication
         mongoengine.connect(
             db=MONGODB_SETTINGS["db"],
             host=MONGODB_SETTINGS["host"],
             port=MONGODB_SETTINGS["port"],
             connect=False,
             tz_aware=True,
-        )
-        print(
-            f"🍃 Connected to MongoDB (no auth): {MONGODB_SETTINGS['host']}:{MONGODB_SETTINGS['port']}/{MONGODB_SETTINGS['db']}"
         )
 
 # ==========================================
@@ -413,7 +412,7 @@ if "redis" in REDIS_URL.lower():
             "VERSION": config("CACHE_VERSION", default=1, cast=int),
         }
     }
-    print("🔥 Redis cache configured")
+    pass  # Redis cache configured
 else:
     # Fallback to local memory cache
     CACHES = {
@@ -427,7 +426,7 @@ else:
             },
         }
     }
-    print("💾 Local memory cache configured")
+    pass  # Local memory cache configured
 
 # Cache TTL settings for different data types
 CACHE_TTL = {
@@ -1223,32 +1222,7 @@ def get_environment_emoji():
         return "🛠️"
 
 
-print(
-    f"""
-🌾 SmartCropAdvisory Configuration Loaded
-========================================
-{get_environment_emoji()} Environment: {DJANGO_ENV.title()}
-🗄️ Database: {get_database_info()}
-🔥 Cache: {get_cache_info()}
-📱 Apps: {len(LOCAL_APPS)} agricultural apps
-🌍 Timezone: {TIME_ZONE}
-📊 API Docs: DRF Spectacular (OpenAPI 3.0)
-🛠️ Debug Toolbar: {'Enabled' if DEBUG and 'debug_toolbar' in INSTALLED_APPS else 'Disabled'}
-🔐 Authentication: JWT + Token + Session
-🚫 HTTPS: {'Enabled' if SECURE_SSL_REDIRECT else 'Disabled (HTTP-friendly)'}
-📄 Config Source: .env file
-🧠 ML Models: {len(ML_MODELS)} configured
-⚡ Async Tasks: {'Celery' if not CELERY_TASK_ALWAYS_EAGER else 'Synchronous (Debug)'}
-🍃 MongoDB: {'Connected' if mongoengine.connection.get_connection() else 'Configured'}
-========================================
-"""
-)
-
-# Development warnings
+# Print startup summary
 if DEBUG:
-    if not API_KEYS.get("OPENWEATHER_API_KEY"):
-        print("⚠️  Warning: OPENWEATHER_API_KEY not configured")
-    if not EMAIL_HOST_USER:
-        print("⚠️  Warning: Email configuration incomplete")
-    if CELERY_TASK_ALWAYS_EAGER:
-        print("ℹ️  Info: Celery tasks running synchronously (DEBUG mode)")
+    print(f"🌾 SmartCropAdvisory loaded - {DJANGO_ENV.title()} mode")
+    pass
