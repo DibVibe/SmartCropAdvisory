@@ -136,56 +136,133 @@
 │   │   ├── asgi.py
 │   │   ├── settings.py
 │   │   ├── urls.py
+│   │   ├── views.py
 │   │   └── wsgi.py
 │   │
 │   ├── 📱 Apps/
-│   │   ├── CropAnalysis/
+│   │   ├── Advisory/
+│   │   │   ├── migrations/
+│   │   │   ├── Services/
 │   │   │   ├── __init__.py
 │   │   │   ├── admin.py
 │   │   │   ├── apps.py
-│   │   │   ├── disease_detector.py
-│   │   │   ├── yield_predictor.py
-│   │   │   ├── crop_recommender.py
 │   │   │   ├── models.py
 │   │   │   ├── serializers.py
 │   │   │   ├── tests.py
 │   │   │   ├── urls.py
 │   │   │   └── views.py
-│   │   ├── WeatherIntegration/
+│   │   ├── CropAnalysis/
+│   │   │   ├── migrations/
+│   │   │   ├── Services/
 │   │   │   ├── __init__.py
-│   │   │   ├── weather_service.py
-│   │   │   ├── forecast_analyzer.py
+│   │   │   ├── admin.py
+│   │   │   ├── apps.py
+│   │   │   ├── crop_recommender.py
+│   │   │   ├── disease_detector.py
+│   │   │   ├── models.py
+│   │   │   ├── mongo_models.py
+│   │   │   ├── serializers.py
+│   │   │   ├── tests.py
+│   │   │   ├── urls.py
 │   │   │   └── views.py
+│   │   │   ├── yield_predictor.py
 │   │   ├── IrrigationAdvisor/
+│   │   │   ├── migrations/
+│   │   │   ├── Services/
 │   │   │   ├── __init__.py
+│   │   │   ├── admin.py
+│   │   │   ├── apps.py
+│   │   │   ├── models.py
 │   │   │   ├── moisture_analyzer.py
 │   │   │   ├── schedule_optimizer.py
+│   │   │   ├── serializers.py
+│   │   │   ├── tests.py
+│   │   │   ├── urls.py
 │   │   │   └── views.py
 │   │   ├── MarketAnalysis/
+│   │   │   ├── migrations/
+│   │   │   ├── Services/
 │   │   │   ├── __init__.py
+│   │   │   ├── admin.py
+│   │   │   ├── apps.py
+│   │   │   ├── models.py
 │   │   │   ├── price_predictor.py
+│   │   │   ├── serializers.py
+│   │   │   ├── tests.py
 │   │   │   ├── trend_analyzer.py
+│   │   │   ├── urls.py
 │   │   │   └── views.py
-│   │   └── UserManagement/
+│   │   ├── SystemStatus/
+│   │   │   ├── migrations/
+│   │   │   ├── __init__.py
+│   │   │   ├── admin.py
+│   │   │   ├── apps.py
+│   │   │   ├── models.py
+│   │   │   ├── serializers.py
+│   │   │   ├── tests.py
+│   │   │   ├── urls.py
+│   │   │   └── views.py
+│   │   ├── UserManagement/
+│   │   │   ├── migrations/
+│   │   │   ├── __init__.py
+│   │   │   ├── admin.py
+│   │   │   ├── apps.py
+│   │   │   ├── models.py
+│   │   │   ├── serializers.py
+│   │   │   ├── signals.py
+│   │   │   ├── tests.py
+│   │   │   ├── urls.py
+│   │   │   ├── utils.py
+│   │   │   └── views.py
+│   │   └── WeatherIntegration/
+│   │       ├── migrations/
+│   │       ├── Services/
 │   │       ├── __init__.py
+│   │       ├── admin.py
+│   │       ├── apps.py
+│   │       ├── forecast_analyzer.py
 │   │       ├── models.py
-│   │       └── views.py
+│   │       ├── serializers.py
+│   │       ├── tests.py
+│   │       ├── urls.py
+│   │       ├── views.py
+│   │       └── weather_service.py
+│   │
+│   ├── ⚙️ Config/
+│   │   ├── api_keys.py
+│   │   ├── database.py
+│   │   └── redis_config.py
 │   │
 │   ├── 📊 Logs/
-│   │   ├── ModelTraining.log
+│   │   ├── api.log
 │   │   ├── CropAnalysis.log
-│   │   ├── WeatherAPI.log
-│   │   └── SystemErrors.log
+│   │   ├── django.log
+│   │   ├── errors.log
+│   │   ├── ml_operations.log
+│   │   ├── ModelTraining.log
+│   │   ├── mongodb.log
+│   │   ├── SystemErrors.log
+│   │   └── WeatherAPI.log
+│   │
+│   ├── 🪧 Management/
+│   │   └── Commands/
+│   │       └── migrate_to_mongodb.py
+│   │
+│   ├── 📸 Media/
+│   │   ├── health_check_storage_test/
+│   │   ├── Processed/
+│   │   └── Uploads/
 │   │
 │   ├── 🧠 Scripts/
+│   │   ├── DataProcessing/
+│   │   │   ├── feature_engineering.py
+│   │   │   └── preprocess_images.py
 │   │   ├── Models/
-│   │   │   ├── disease_model.h5
-│   │   │   ├── yield_model.pkl
-│   │   │   └── crop_recommender.pkl
+│   │   │   └── models_metadata.json
 │   │   ├── Training/
 │   │   │   ├── train_disease_model.py
-│   │   │   ├── train_yield_model.py
-│   │   │   └── train_recommender.py
+│   │   │   ├── train_recommender.py
+│   │   │   └── train_yield_model.py
 │   │   ├── DataProcessing/
 │   │   │   ├── preprocess_images.py
 │   │   │   └── feature_engineering.py
@@ -193,80 +270,272 @@
 │   │       ├── data_loader.py
 │   │       └── validators.py
 │   │
+│   ├── 🎭 Static/
+│   │   ├── CSS/
+│   │   ├── Images/
+│   │   └── JavaScript/
+│   │
+│   ├── 🗄️ staticfiles/
+│   │   ├── admin/
+│   │   │   ├── css
+│   │   │   ├── img
+│   │   │   └── js
+│   │   ├── rest_framework/
+│   │   │   ├── css
+│   │   │   ├── docs
+│   │   │   ├── fonts
+│   │   │   ├── img
+│   │   │   └── js
+│   │   └── staticfiles.json
+│   │
 │   ├── 🎨 Templates/
 │   │   ├── base.html
 │   │   └── index.html
 │   │
-│   ├── 🎭 Static/
-│   │   ├── css/
-│   │   ├── js/
-│   │   └── images/
-│   │
-│   ├── 📸 Media/
-│   │   ├── uploads/
-│   │   └── processed/
-│   │
-│   ├── ⚙️ Config/
-│   │   ├── database.py
-│   │   ├── redis_config.py
-│   │   └── api_keys.py
-│   │
 │   ├── 🛠️ Utils/
 │   │   ├── image_utils.py
-│   │   ├── weather_utils.py
-│   │   └── ml_utils.py
+│   │   ├── ml_utils.py
+│   │   └── weather_utils.py
 │   │
+│   ├── 👓 .env
+│   ├── ⛃ db.sqlite3
 │   ├── 📦 manage.py
-│   ├── 📋 requirements.txt
-│   ├── 🐳 Dockerfile
-│   └── 🔧 docker-compose.yml
+│   └── 📋 requirements.txt
 │
-├── 🎨 Frontend/
-│   ├── 📱 app/
-│   │   ├── layout.tsx
-│   │   ├── page.tsx
-│   │   └── globals.css
-│   ├── 🧩 components/
-│   │   ├── Dashboard/
-│   │   │   ├── Dashboard.tsx
-│   │   │   ├── WeatherWidget.tsx
-│   │   │   └── CropStatus.tsx
-│   │   ├── Analysis/
-│   │   │   ├── DiseaseDetector.tsx
-│   │   │   ├── YieldPredictor.tsx
-│   │   │   └── CropRecommender.tsx
-│   │   ├── Maps/
-│   │   │   ├── FieldMap.tsx
-│   │   │   └── WeatherMap.tsx
-│   │   ├── Charts/
-│   │   │   ├── YieldChart.tsx
-│   │   │   ├── PriceChart.tsx
-│   │   │   └── WeatherChart.tsx
-│   │   └── Common/
-│   │       ├── Header.tsx
-│   │       ├── Footer.tsx
-│   │       └── LoadingSpinner.tsx
-│   ├── 🔌 lib/
-│   │   ├── api/
-│   │   │   ├── cropApi.ts
-│   │   │   ├── weatherApi.ts
-│   │   │   └── marketApi.ts
-│   │   ├── hooks/
-│   │   │   ├── useWeather.ts
-│   │   │   ├── useCropData.ts
-│   │   │   └── useAuth.ts
-│   │   └── utils/
-│   │       ├── formatters.ts
-│   │       └── validators.ts
-│   ├── 🌐 public/
-│   │   ├── images/
-│   │   └── icons/
-│   ├── 🎨 styles/
-│   │   └── modules/
-│   ├── 📦 package.json
-│   ├── ⚙️ next.config.js
-│   ├── ⚙️ tailwind.config.js
-│   └── ⚙️ tsconfig.json
+├──📁 Frontend/
+|   ├── 📱 app/
+|   │   ├── (auth)/
+|   │   │   ├── login/
+|   │   │   │   └── page.tsx
+|   │   │   ├── register/
+|   │   │   │   └── page.tsx
+|   │   │   ├── forgot-password/
+|   │   │   │   └── page.tsx
+|   │   │   └── layout.tsx
+|   │   │
+|   │   ├── (dashboard)/
+|   │   │   ├── dashboard/
+|   │   │   │   └── page.tsx
+|   │   │   ├── fields/
+|   │   │   │   ├── page.tsx
+|   │   │   │   ├── [id]/
+|   │   │   │   │   └── page.tsx
+|   │   │   │   └── new/
+|   │   │   │       └── page.tsx
+|   │   │   ├── crops/
+|   │   │   │   ├── page.tsx
+|   │   │   │   ├── analysis/
+|   │   │   │   │   └── page.tsx
+|   │   │   │   ├── diseases/
+|   │   │   │   │   └── page.tsx
+|   │   │   │   └── recommendations/
+|   │   │   │       └── page.tsx
+|   │   │   ├── irrigation/
+|   │   │   │   ├── page.tsx
+|   │   │   │   ├── schedule/
+|   │   │   │   │   └── page.tsx
+|   │   │   │   └── moisture/
+|   │   │   │       └── page.tsx
+|   │   │   ├── market/
+|   │   │   │   ├── page.tsx
+|   │   │   │   ├── prices/
+|   │   │   │   │   └── page.tsx
+|   │   │   │   ├── trends/
+|   │   │   │   │   └── page.tsx
+|   │   │   │   └── alerts/
+|   │   │   │       └── page.tsx
+|   │   │   ├── weather/
+|   │   │   │   ├── page.tsx
+|   │   │   │   └── forecast/
+|   │   │   │       └── page.tsx
+|   │   │   ├── advisory/
+|   │   │   │   └── page.tsx
+|   │   │   ├── profile/
+|   │   │   │   ├── page.tsx
+|   │   │   │   └── settings/
+|   │   │   │       └── page.tsx
+|   │   │   └── layout.tsx
+|   │   │
+|   │   ├── api/
+|   │   │   └── upload/
+|   │   │       └── route.ts
+|   │   │
+|   │   ├── layout.tsx
+|   │   ├── page.tsx
+|   │   ├── globals.css
+|   │   └── providers.tsx
+|   │
+|   ├── 🧩 components/
+|   │   ├── dashboard/
+|   │   │   ├── DashboardStats.tsx
+|   │   │   ├── QuickActions.tsx
+|   │   │   ├── RecentActivity.tsx
+|   │   │   ├── WeatherWidget.tsx
+|   │   │   ├── AlertsWidget.tsx
+|   │   │   └── CropHealthOverview.tsx
+|   │   │
+|   │   ├── fields/
+|   │   │   ├── FieldCard.tsx
+|   │   │   ├── FieldList.tsx
+|   │   │   ├── FieldForm.tsx
+|   │   │   ├── FieldMap.tsx
+|   │   │   └── FieldDetails.tsx
+|   │   │
+|   │   ├── crops/
+|   │   │   ├── CropCard.tsx
+|   │   │   ├── CropList.tsx
+|   │   │   ├── DiseaseDetector.tsx
+|   │   │   ├── ImageUploader.tsx
+|   │   │   ├── YieldPredictor.tsx
+|   │   │   ├── CropRecommender.tsx
+|   │   │   └── CropAnalysisResults.tsx
+|   │   │
+|   │   ├── irrigation/
+|   │   │   ├── IrrigationSchedule.tsx
+|   │   │   ├── MoistureChart.tsx
+|   │   │   ├── WaterUsageStats.tsx
+|   │   │   ├── ScheduleOptimizer.tsx
+|   │   │   └── IrrigationMap.tsx
+|   │   │
+|   │   ├── market/
+|   │   │   ├── PriceChart.tsx
+|   │   │   ├── MarketTrends.tsx
+|   │   │   ├── PriceComparison.tsx
+|   │   │   ├── MarketAlerts.tsx
+|   │   │   └── CommodityCard.tsx
+|   │   │
+|   │   ├── weather/
+|   │   │   ├── CurrentWeather.tsx
+|   │   │   ├── WeatherForecast.tsx
+|   │   │   ├── WeatherMap.tsx
+|   │   │   ├── WeatherAlerts.tsx
+|   │   │   └── WeatherChart.tsx
+|   │   │
+|   │   ├── advisory/
+|   │   │   ├── AdvisoryCard.tsx
+|   │   │   ├── RecommendationList.tsx
+|   │   │   ├── SeasonalTips.tsx
+|   │   │   └── ExpertAdvice.tsx
+|   │   │
+|   │   ├── ui/
+|   │   │   ├── Button.tsx
+|   │   │   ├── Card.tsx
+|   │   │   ├── Input.tsx
+|   │   │   ├── Select.tsx
+|   │   │   ├── Modal.tsx
+|   │   │   ├── Toast.tsx
+|   │   │   ├── Tabs.tsx
+|   │   │   ├── Table.tsx
+|   │   │   ├── Dropdown.tsx
+|   │   │   ├── Badge.tsx
+|   │   │   ├── Progress.tsx
+|   │   │   ├── Skeleton.tsx
+|   │   │   └── Alert.tsx
+|   │   │
+|   │   └── layout/
+|   │       ├── Header.tsx
+|   │       ├── Sidebar.tsx
+|   │       ├── Footer.tsx
+|   │       ├── MobileNav.tsx
+|   │       ├── Breadcrumbs.tsx
+|   │       └── PageHeader.tsx
+|   │
+|   └──🔌 lib/
+|       ├── api/
+|       │   ├── client.ts
+|       │   ├── endpoints.ts
+|       │   │
+|       │   ├── auth.ts
+|       │   ├── user.ts
+|       │   ├── fields.ts
+|       │   ├── crops.ts
+|       │   ├── irrigation.ts
+|       │   ├── market.ts
+|       │   ├── weather.ts
+|       │   └── advisory.ts
+|       │
+|       ├── hooks/
+|       │   ├── useAuth.ts
+|       │   ├── useUser.ts
+|       │   ├── useFields.ts
+|       │   ├── useCrops.ts
+|       │   ├── useWeather.ts
+|       │   ├── useMarket.ts
+|       │   ├── useIrrigation.ts
+|       │   ├── useNotifications.ts
+|       │   ├── useGeolocation.ts
+|       │   ├── useDebounce.ts
+|       │   ├── useInfiniteScroll.ts
+|       │   └── useWebSocket.ts
+|       │
+|       ├── utils/
+|       │   ├── constants.ts
+|       │   ├── formatters.ts
+|       │   ├── validators.ts
+|       │   ├── helpers.ts
+|       │   ├── dates.ts
+|       │   ├── calculations.ts
+|       │   └── storage.ts
+|       │
+|       ├── store/
+|       │   ├── authStore.ts
+|       │   ├── userStore.ts
+|       │   ├── fieldStore.ts
+|       │   ├── cropStore.ts
+|       │   ├── notificationStore.ts
+|       │   └── index.ts
+|       │
+|       └── types/
+|           ├── auth.types.ts
+|           ├── user.types.ts
+|           ├── field.types.ts
+|           ├── crop.types.ts
+|           ├── irrigation.types.ts
+|           ├── market.types.ts
+|           ├── weather.types.ts
+|           ├── advisory.types.ts
+|           └── api.types.ts
+│
+├── 🎨 styles/
+│   ├── themes/
+│   │   ├── default.ts
+│   │   ├── dark.ts
+│   │   └── colors.ts
+│   └── modules/
+│       ├── dashboard.module.css
+│       ├── forms.module.css
+│       └── charts.module.css
+│
+├── 🌐 public/
+│   ├── images/
+│   │   ├── crops/
+│   │   ├── diseases/
+│   │   ├── icons/
+│   │   └── illustrations/
+│   ├── locales/
+│   │   ├── en/
+│   │   │   └── common.json
+│   │   └── hi/
+│   │       └── common.json
+│   └── fonts/
+│
+├── 🧪 __tests__/
+│   ├── components/
+│   ├── hooks/
+│   ├── utils/
+│   └── integration/
+│
+├── 📦 middleware.ts
+├── 📦 next.config.js
+├── 📦 package.json
+├── 📦 tsconfig.json
+├── 📦 tailwind.config.js
+├── 📦 postcss.config.js
+├── 📦 .env.local
+├── 📦 .env.example
+├── 📦 .eslintrc.json
+├── 📦 .prettierrc
+├── 📖 README.md
 │
 ├── 🧪 Tests/
 │   ├── Backend/

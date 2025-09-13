@@ -1,0 +1,16 @@
+version: "3.8"
+services:
+  frontend:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api
+    depends_on:
+      - backend
+
+  backend:
+    # Your Django backend configuration
+    image: your-backend-image
+    ports:
+      - "8000:8000"
