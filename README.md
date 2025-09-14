@@ -1,4 +1,4 @@
-# 🌾 SmartCropAdvisory - AI-Powered Agricultural Intelligence System
+🌾 SmartCropAdvisory - AI-Powered Agricultural Intelligence System
 
 <div align="center">
 
