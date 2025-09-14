@@ -72,8 +72,11 @@ pip-delete-this-directory.txt
 # =====================================================
 
 # Next.js build outputs - DO NOT UPLOAD
+*.next/
 .next/
+*.next/**
 .next/**
+*out/
 out/
 
 # Next.js cache
