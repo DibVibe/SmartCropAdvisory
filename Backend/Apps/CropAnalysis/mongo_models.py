@@ -67,15 +67,22 @@ class Crop(Document):
 
 
 class Field(Document):
+    """MongoDB Document for Field - no manual geospatial indexing"""
+
     owner_id = fields.IntField(required=True)
     name = fields.StringField(required=True, max_length=200)
-    location = fields.PointField()
+
+    # Geospatial fields - Remove manual indexing, let PointField handle it
+    location = fields.PointField(required=True)
     boundary = fields.PolygonField()
+
     area = fields.FloatField(help_text="Area in hectares")
     soil_properties = fields.EmbeddedDocumentField(SoilProperties)
     crop_history = fields.ListField(fields.DictField())
     current_crop = fields.ReferenceField(Crop)
     weather_station_id = fields.StringField()
+
+    # Timestamps
     created_at = fields.DateTimeField(default=datetime.utcnow)
     last_updated = fields.DateTimeField(default=datetime.utcnow)
 
@@ -85,21 +92,21 @@ class Field(Document):
             "owner_id",
             "name",
             ("owner_id", "name"),
-            {
-                "fields": ["location"],
-                "cls": False,
-                "sparse": True,
-                "types": "2dsphere",
-            },  # Fixed line
+            # Remove manual geospatial indexing completely
+            # PointField automatically creates the correct 2dsphere index
         ],
     }
+
+    def save(self, *args, **kwargs):
+        self.last_updated = datetime.utcnow()
+        return super().save(*args, **kwargs)
 
 
 class DiseaseDetection(Document):
     """MongoDB Document for Disease Detection Results"""
 
-    field = fields.ReferenceField(Field)
-    crop = fields.ReferenceField(Crop)
+    field = fields.ReferenceField(Field, required=True)
+    crop = fields.ReferenceField(Crop, required=True)
 
     # Image data
     image_url = fields.URLField(required=True)
@@ -109,7 +116,7 @@ class DiseaseDetection(Document):
     disease_detected = fields.StringField()
     confidence_score = fields.FloatField(min_value=0, max_value=1)
 
-    # Multiple predictions
+    # Multiple predictions for ensemble models
     predictions = fields.ListField(fields.DictField())
 
     # Recommendations
@@ -129,40 +136,62 @@ class DiseaseDetection(Document):
             "field",
             "crop",
             "disease_detected",
-            "-detected_at",  # Descending index for recent detections
+            "-detected_at",  # Descending timestamp for recent results
+            ("field", "-detected_at"),  # Compound for field's detection history
         ],
     }
 
 
 class WeatherData(Document):
+    """MongoDB Document for Weather Data - no manual geospatial indexing"""
+
+    # Geospatial location - Remove manual indexing, let PointField handle it
     location = fields.PointField(required=True)
     timestamp = fields.DateTimeField(required=True)
-    temperature = fields.FloatField()
-    humidity = fields.FloatField()
-    pressure = fields.FloatField()
-    wind_speed = fields.FloatField()
-    wind_direction = fields.IntField()
-    rainfall = fields.FloatField()
+
+    # Weather measurements
+    temperature = fields.FloatField()  # Celsius
+    humidity = fields.FloatField()  # Percentage
+    pressure = fields.FloatField()  # hPa
+    wind_speed = fields.FloatField()  # km/h
+    wind_direction = fields.IntField(min_value=0, max_value=360)  # Degrees
+    rainfall = fields.FloatField()  # mm
     conditions = fields.StringField()
-    uv_index = fields.IntField()
-    visibility = fields.FloatField()
-    source = fields.StringField()
+    uv_index = fields.IntField(min_value=0, max_value=12)
+    visibility = fields.FloatField()  # km
+
+    # Data source tracking
+    source = fields.StringField(required=True)
+    source_id = fields.StringField()  # External API record ID
+
+    # Quality indicators
+    data_quality = fields.StringField(
+        choices=["excellent", "good", "fair", "poor"], default="good"
+    )
 
     meta = {
         "collection": "weather_data",
         "indexes": [
-            {
-                "fields": ["location"],
-                "cls": False,
-                "sparse": True,
-                "types": "2dsphere",
-            },
-            "-timestamp",
-            ("location", "-timestamp"),
+            # Remove manual geospatial indexing completely
+            # PointField automatically creates the correct 2dsphere index
+            "-timestamp",  # Recent data first
+            ("timestamp", "location"),  # Time-location compound
+            "source",
         ],
+        # Time series collection optimization for MongoDB 5.0+
         "timeseries": {
             "timeField": "timestamp",
             "metaField": "location",
             "granularity": "hours",
         },
     }
+
+    def clean(self):
+        """Validation before saving"""
+        if self.humidity is not None and (self.humidity < 0 or self.humidity > 100):
+            raise ValueError("Humidity must be between 0 and 100")
+
+        if self.temperature is not None and (
+            self.temperature < -50 or self.temperature > 70
+        ):
+            raise ValueError("Temperature seems unrealistic")

@@ -1,0 +1,8 @@
+User-Agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/v1/users/
+Disallow: /api/health/
+Disallow: /api/status/
+
+Sitemap: https://yourdomain.com/sitemap.xml

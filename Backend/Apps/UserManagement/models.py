@@ -31,7 +31,11 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     user_type = models.CharField(max_length=20, choices=USER_TYPES, default="farmer")
     phone_number = models.CharField(
-        validators=[phone_regex], max_length=17, unique=True
+        max_length=17,
+        unique=True,
+        blank=True,
+        null=True,  # Allow null instead of empty string
+        help_text="Phone number in international format",
     )
     alternate_phone = models.CharField(
         validators=[phone_regex], max_length=17, blank=True
@@ -131,6 +135,11 @@ class UserProfile(models.Model):
             parts.append(self.address_line2)
         parts.extend([self.village, self.district, self.state, self.pincode])
         return ", ".join(filter(None, parts))
+
+    def save(self, *args, **kwargs):
+        if self.phone_number == "":
+            self.phone_number = None
+        super().save(*args, **kwargs)
 
 
 class Subscription(models.Model):

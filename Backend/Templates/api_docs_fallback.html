@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ docs.title }} - Documentation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        h1 {
+            color: #2e7d32;
+            border-bottom: 3px solid #4caf50;
+            padding-bottom: 10px;
+        }
+        .endpoint {
+            background: #f8f9fa;
+            border-left: 4px solid #2e7d32;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .endpoint h3 {
+            margin-top: 0;
+            color: #1b5e20;
+        }
+        .method {
+            background: #4caf50;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        .auth-section {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .usage-section {
+            background: #fff3e0;
+            padding: 20px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .note {
+            background: #fff9c4;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        .json-toggle {
+            float: right;
+            background: #2196f3;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ docs.title }}</h1>
+        <a href="?format=json" class="json-toggle">View as JSON</a>
+
+        <div class="note">
+            <strong>⚠️ Note:</strong> {{ docs.message }}
+        </div>
+
+        <p><strong>Version:</strong> {{ docs.version }}</p>
+        <p>{{ docs.description }}</p>
+
+        <h2>🔐 Authentication</h2>
+        <div class="auth-section">
+            <h3>JWT Authentication (Recommended)</h3>
+            <code>{{ docs.authentication.JWT }}</code>
+
+            <h3>Token Authentication (Legacy)</h3>
+            <code>{{ docs.authentication.Token }}</code>
+
+            <p><strong>Note:</strong> {{ docs.authentication.note }}</p>
+        </div>
+
+        <h2>📍 API Endpoints</h2>
+        {% for name, endpoint in docs.endpoints.items %}
+        <div class="endpoint">
+            <h3>{{ name }}</h3>
+            <p><strong>Base URL:</strong> <code>{{ endpoint.base_url }}</code></p>
+            <p>{{ endpoint.description }}</p>
+        </div>
+        {% endfor %}
+
+        <h2>🚀 Usage Guide</h2>
+        <div class="usage-section">
+            <h3>Browse API Endpoints</h3>
+            <p>{{ docs.usage.browse_api }}</p>
+
+            <h3>Testing with cURL</h3>
+            <code>{{ docs.usage.curl_example }}</code>
+
+            <h3>Postman Integration</h3>
+            <p>{{ docs.usage.postman }}</p>
+        </div>
+
+        <div class="note">
+            <strong>💡 Pro Tip:</strong> Visit any endpoint URL directly to use Django REST Framework's built-in browsable API interface!
+        </div>
+    </div>
+</body>
+</html>

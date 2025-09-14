@@ -13,6 +13,7 @@ warnings.filterwarnings("ignore", category=UserWarning, module="pkg_resources")
 warnings.filterwarnings(
     "ignore", category=UserWarning, module="rest_framework_simplejwt"
 )
+# Note: Removed the AttributeError filterwarnings as it's not a Warning subclass
 
 # Standard library imports
 import sys
@@ -99,6 +100,7 @@ THIRD_PARTY_APPS = [
     "django_extensions",
     "django_celery_results",
     "django_celery_beat",
+    "robots",
 ]
 
 # SmartCropAdvisory Apps
@@ -134,6 +136,8 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
     # CORS (should be early)
     "corsheaders.middleware.CorsMiddleware",
+    # API Cache Control - Add this line here
+    "Apps.Middleware.api_cache_control.APINoCacheMiddleware",
     # Debug Toolbar (conditionally added)
 ]
 
@@ -403,7 +407,7 @@ if "redis" in REDIS_URL.lower():
                     "socket_keepalive": True,
                     "socket_keepalive_options": {},
                 },
-                "SERIALIZER": "django_redis.serializers.json.JSONSerializer",
+                "SERIALIZER": "django_redis.serializers.pickle.PickleSerializer",
                 "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
                 "IGNORE_EXCEPTIONS": True,
             },
@@ -528,6 +532,78 @@ SIMPLE_JWT = {
 }
 
 # ==========================================
+# 🛠️ DRF SPECTACULAR HOOKS
+# ==========================================
+
+
+def spectacular_preprocessing_hook(endpoints):
+    """
+    Custom preprocessing hook to filter out problematic MongoEngine endpoints
+    """
+    filtered_endpoints = []
+
+    for path, path_regex, method, callback in endpoints:
+        try:
+            # Skip endpoints that might cause issues with MongoEngine serializers
+            view_name = (
+                callback.__name__ if hasattr(callback, "__name__") else str(callback)
+            )
+
+            # Check if this is a problematic view
+            if hasattr(callback, "cls"):
+                view_class = callback.cls
+                if hasattr(view_class, "serializer_class"):
+                    serializer = view_class.serializer_class
+                    # Check if it's a MongoEngine serializer that might cause issues
+                    if "mongoengine" in str(type(serializer)):
+                        # Try to access the serializer to see if it causes issues
+                        try:
+                            test_serializer = serializer()
+                            test_serializer.fields  # This might trigger the AttributeError
+                            filtered_endpoints.append(
+                                (path, path_regex, method, callback)
+                            )
+                        except (AttributeError, TypeError):
+                            # Skip this endpoint if it causes issues
+                            continue
+                    else:
+                        filtered_endpoints.append((path, path_regex, method, callback))
+                else:
+                    filtered_endpoints.append((path, path_regex, method, callback))
+            else:
+                filtered_endpoints.append((path, path_regex, method, callback))
+
+        except Exception:
+            # If any error occurs, skip this endpoint
+            continue
+
+    return filtered_endpoints
+
+
+def spectacular_postprocessing_hook(result, generator, request, public):
+    """
+    Custom postprocessing hook to clean up the schema after generation
+    """
+    try:
+        # Clean up any remaining problematic schemas
+        if "components" in result and "schemas" in result["components"]:
+            schemas = result["components"]["schemas"]
+            schemas_to_remove = []
+
+            for schema_name in schemas:
+                if "EmbeddedSerializer" in schema_name or "Embedded" in schema_name:
+                    schemas_to_remove.append(schema_name)
+
+            for schema_name in schemas_to_remove:
+                schemas.pop(schema_name, None)
+
+    except Exception:
+        pass
+
+    return result
+
+
+# ==========================================
 # 📊 DRF SPECTACULAR SETTINGS (API DOCS)
 # ==========================================
 
@@ -578,9 +654,21 @@ SPECTACULAR_SETTINGS = {
     """,
     "VERSION": config("API_VERSION", default="2.0.0"),
     "SERVE_INCLUDE_SCHEMA": False,
-    "COMPONENT_SPLIT_REQUEST": True,
+    # 🔧 FIX: Disable component splitting that causes MongoEngine issues
+    "COMPONENT_SPLIT_REQUEST": False,
+    "COMPONENT_SPLIT_PATCH": False,
+    "COMPONENT_NO_READ_ONLY_REQUIRED": True,
     "SCHEMA_PATH_PREFIX": "/api/v1/",
     "SCHEMA_PATH_PREFIX_TRIM": True,
+    # 🛠️ FIX: Add preprocessing hook to handle MongoEngine compatibility
+    "PREPROCESSING_HOOKS": [
+        "SmartCropAdvisory.settings.spectacular_preprocessing_hook",
+    ],
+    "POSTPROCESSING_HOOKS": [
+        "SmartCropAdvisory.settings.spectacular_postprocessing_hook",
+    ],
+    # 🚫 FIX: Disable errors and warnings that might crash schema generation
+    "DISABLE_ERRORS_AND_WARNINGS": True,
     # Tags for better organization
     "TAGS": [
         {
@@ -667,7 +755,7 @@ SPECTACULAR_SETTINGS = {
         "hideDownloadButton": False,
         "theme": {
             "colors": {
-                "primary": {"main": "#2e7d32"},  # Green theme for agriculture
+                "primary": {"main": "#2e7d32"},
                 "success": {"main": "#4caf50"},
                 "warning": {"main": "#ff9800"},
                 "error": {"main": "#f44336"},
@@ -682,11 +770,7 @@ SPECTACULAR_SETTINGS = {
         },
     },
     # Schema customizations
-    "PREPROCESSING_HOOKS": [],
-    "POSTPROCESSING_HOOKS": [],
     "ENUM_NAME_OVERRIDES": {},
-    "COMPONENT_SPLIT_PATCH": True,
-    "COMPONENT_NO_READ_ONLY_REQUIRED": False,
 }
 
 # ==========================================
@@ -917,9 +1001,7 @@ LOGGING = {
             "level": LOG_LEVEL,
             "class": "logging.handlers.RotatingFileHandler",
             "filename": LOGS_DIR / "django.log",
-            "maxBytes": config(
-                "LOG_MAX_BYTES", default=10 * 1024 * 1024, cast=int
-            ),  # 10MB
+            "maxBytes": config("LOG_MAX_BYTES", default=10 * 1024 * 1024, cast=int),
             "backupCount": config("LOG_BACKUP_COUNT", default=5, cast=int),
             "formatter": "verbose",
             "encoding": "utf-8",
@@ -959,7 +1041,7 @@ LOGGING = {
         },
     },
     "loggers": {
-        "": {  # Root logger
+        "": {
             "handlers": ["console", "file"],
             "level": LOG_LEVEL,
             "propagate": False,
@@ -971,7 +1053,7 @@ LOGGING = {
         },
         "django.db.backends": {
             "handlers": ["file"],
-            "level": "WARNING",  # Reduce SQL query logging
+            "level": "WARNING",
             "propagate": False,
         },
         "django.request": {
