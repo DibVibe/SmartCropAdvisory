@@ -1,5 +1,3 @@
-Hello
-
 # 🌾 SmartCropAdvisory - AI-Powered Agricultural Intelligence System
 
 <div align="center">
