@@ -5,10 +5,7 @@ import { motion } from 'framer-motion'
 import { 
   CloudIcon, 
   SunIcon, 
-  CloudDrizzleIcon,
-  WindIcon,
   EyeIcon,
-  DropletIcon,
   ArrowUpIcon,
   ArrowDownIcon
 } from '@heroicons/react/24/outline'
@@ -245,7 +242,7 @@ export default function WeatherPage() {
               {/* Weather Details Grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
-                  <DropletIcon className="h-8 w-8 text-blue-500" />
+                  <div className="text-2xl text-blue-500">💧</div>
                   <div>
                     <div className="text-lg font-semibold text-gray-900">{weatherData.current.humidity}%</div>
                     <div className="text-sm text-gray-600">Humidity</div>
@@ -253,7 +250,7 @@ export default function WeatherPage() {
                 </div>
 
                 <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
-                  <WindIcon className="h-8 w-8 text-green-500" />
+                  <div className="text-2xl text-green-500">🌬️</div>
                   <div>
                     <div className="text-lg font-semibold text-gray-900">
                       {weatherData.current.windSpeed} km/h
@@ -345,11 +342,11 @@ export default function WeatherPage() {
                 <div className="text-xs text-gray-600 mb-2">{day.condition}</div>
                 <div className="space-y-1 text-xs text-gray-500">
                   <div className="flex items-center justify-center space-x-1">
-                    <DropletIcon className="h-3 w-3" />
+                    <span>💧</span>
                     <span>{day.precipitation}%</span>
                   </div>
                   <div className="flex items-center justify-center space-x-1">
-                    <WindIcon className="h-3 w-3" />
+                    <span>🌬️</span>
                     <span>{day.windSpeed}km/h</span>
                   </div>
                 </div>

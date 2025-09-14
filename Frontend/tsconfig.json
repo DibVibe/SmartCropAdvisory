@@ -22,11 +22,11 @@
     "paths": {
       "@/*": ["./*"],
       "@/components/*": ["./components/*"],
-      "@/lib/*": ["./Lib/*"],
-      "@/app/*": ["./App/*"],
-      "@/hooks/*": ["./Lib/Hooks/*"],
-      "@/utils/*": ["./Lib/Utils/*"],
-      "@/api/*": ["./Lib/Api/*"]
+      "@/lib/*": ["./lib/*"],
+      "@/app/*": ["./app/*"],
+      "@/hooks/*": ["./hooks/*", "./lib/hooks/*"],
+      "@/utils/*": ["./lib/Utils/*"],
+      "@/api/*": ["./lib/api/*"]
     }
   },
   "include": [

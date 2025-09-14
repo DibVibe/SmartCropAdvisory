@@ -1,5 +1,7 @@
 // API Client
 export { default as apiClient } from './client'
+// Default export for the main API instance
+export { default } from './api'
 
 // API Services
 export * from './cropApi'
