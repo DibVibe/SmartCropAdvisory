@@ -1,4 +1,4 @@
-// File: C:\Users\user\Desktop\pull\pull2\SmartCropAdvisory\Frontend\app\layout.tsx
+// File: /Users/dibakar/Documents/Code/Git & Github/Repo/SmartCropAdvisory/Frontend/app/layout.tsx
 import * as entry from '../../../app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

@@ -1,6 +1,6 @@
 # =====================================================
 # SmartCropAdvisory .gitignore
-# Django + MongoDB + ML + Redis + Celery Project
+# Django + MongoDB + ML + Redis + Celery + Next.js Project
 # =====================================================
 
 # =====================================================
@@ -68,6 +68,98 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # =====================================================
+# ⚛️ NEXT.JS & REACT (FRONTEND)
+# =====================================================
+
+# Next.js build outputs - DO NOT UPLOAD
+.next/
+.next/**
+out/
+
+# Next.js cache
+.next/cache/
+
+# Next.js static exports
+out/
+
+# Next.js incremental static regeneration
+.next/static/chunks/
+.next/static/media/
+.next/server/
+
+# Vercel deployment
+.vercel/
+.vercel/**
+
+# Turbo
+.turbo/
+
+# =====================================================
+# 📦 NODE.JS & NPM
+# =====================================================
+
+# Dependencies - DO NOT UPLOAD
+node_modules/
+jspm_packages/
+
+# npm
+npm-debug.log*
+npm-error.log*
+
+# Yarn
+yarn-debug.log*
+yarn-error.log*
+yarn.lock
+
+# pnpm
+pnpm-debug.log*
+pnpm-error.log*
+
+# Package-lock (uncomment if you prefer yarn)
+# package-lock.json
+
+# Optional npm cache directory
+.npm
+
+# ESLint cache
+.eslintcache
+
+# Stylelint cache
+.stylelintcache
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache
+.parcel-cache/
+
+# =====================================================
+# 🔧 BUILD TOOLS & BUNDLERS
+# =====================================================
+
+# Webpack
+webpack.config.js.map
+
+# Rollup
+rollup.config.js.map
+
+# SWC
+.swc/
+
+# TypeScript
+*.tsbuildinfo
+.tsbuildinfo
+
+# TypeScript cache
+*.tsbuildinfo
+
+# =====================================================
 # 🌐 DJANGO SPECIFIC
 # =====================================================
 
@@ -111,7 +203,7 @@ django_error.log
 # 🔐 ENVIRONMENT & SECRETS
 # =====================================================
 
-# Environment variables
+# Environment variables - FRONTEND & BACKEND
 .env
 .env.local
 .env.development
@@ -120,6 +212,9 @@ django_error.log
 .env.test
 *.env
 .environment
+
+# Next.js environment files
+.env*.local
 
 # Secret keys and API keys
 secrets.json
@@ -166,6 +261,9 @@ appendonly.aof
 cache/
 .cache/
 tmp_cache/
+
+# Next.js cache
+.next/cache/
 
 # =====================================================
 # 📝 LOGS & MONITORING
@@ -262,6 +360,10 @@ celery_results/
 /collected_static/
 /assets/
 
+# Next.js static files (these are auto-generated)
+/Frontend/public/assets/
+/Frontend/public/static/
+
 # Compressed files
 *.zip
 *.tar.gz
@@ -348,21 +450,6 @@ $RECYCLE.BIN/
 .Trash-*
 
 # =====================================================
-# 📦 PACKAGE MANAGERS
-# =====================================================
-
-# npm
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-# package-lock.json
-yarn.lock
-
-# Bower
-bower_components/
-
-# =====================================================
 # 🧪 TESTING
 # =====================================================
 
@@ -372,6 +459,15 @@ test_reports/
 htmlcov/
 .coverage.*
 coverage_html_report/
+
+# Jest (React/Next.js testing)
+coverage/
+.nyc_output/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
 
 # Selenium
 selenium_logs/
@@ -457,6 +553,9 @@ _build/
 _static/
 _templates/
 
+# Storybook
+storybook-static/
+
 # =====================================================
 # 🎯 PROJECT SPECIFIC
 # =====================================================
@@ -499,9 +598,48 @@ whoosh_index/
 elasticsearch/
 
 # =====================================================
+# 🌐 PWA & MOBILE
+# =====================================================
+
+# Service workers cache
+workbox-*.js
+sw.js
+service-worker.js
+
+# Mobile app builds
+android/
+ios/
+.expo/
+.expo-shared/
+
+# =====================================================
+# ⚡ PERFORMANCE & OPTIMIZATION
+# =====================================================
+
+# Bundle analyzer
+.next/analyze/
+bundle-analyzer/
+webpack-bundle-analyzer/
+
+# Lighthouse reports
+lighthouse/
+lhci/
+
+# =====================================================
+# 🎨 DESIGN & ASSETS
+# =====================================================
+
+# Adobe files
+*.psd
+*.ai
+*.sketch
+
+# Figma plugin files
+.figma/
+
+# =====================================================
 # END OF .gitignore
 # =====================================================
 
-# Note: This .gitignore is comprehensive and may include
-# files/folders that don't exist in your project yet.
-# Feel free to remove sections that are not relevant.
+# Note: This .gitignore covers both Django backend and Next.js frontend
+# Remove sections that are not relevant to your specific setup
