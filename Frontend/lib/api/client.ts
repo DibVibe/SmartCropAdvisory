@@ -1,24 +1,22 @@
 import axios from 'axios'
-import toast from 'react-hot-toast'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'
 
 export const apiClient = axios.create({
-  baseURL: API_URL,
+  baseURL: API_BASE_URL,
+  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000, // 30 seconds
 })
 
-// Request interceptor to add auth token
+// Request interceptor
 apiClient.interceptors.request.use(
   (config) => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token')
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`
-      }
+    // Add auth token if available
+    const token = localStorage.getItem('auth_token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
     }
     return config
   },
@@ -27,34 +25,15 @@ apiClient.interceptors.request.use(
   }
 )
 
-// Response interceptor to handle auth errors
+// Response interceptor
 apiClient.interceptors.response.use(
-  (response) => {
-    return response
-  },
-  async (error) => {
-    const originalRequest = error.config
-
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true
-
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('token')
-        toast.error('Session expired. Please login again.')
-        window.location.href = '/login'
-      }
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Handle unauthorized
+      localStorage.removeItem('auth_token')
+      window.location.href = '/login'
     }
-
-    // Handle network errors
-    if (!error.response) {
-      toast.error('Network error. Please check your connection.')
-    }
-
-    // Handle server errors
-    if (error.response?.status >= 500) {
-      toast.error('Server error. Please try again later.')
-    }
-
     return Promise.reject(error)
   }
 )
