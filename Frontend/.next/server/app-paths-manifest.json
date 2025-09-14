@@ -1,8 +1,0 @@
-{
-  "/not-found": "app/not-found.js",
-  "/page": "app/page.js",
-  "/irrigation/page": "app/irrigation/page.js",
-  "/weather/page": "app/weather/page.js",
-  "/analysis/yield/page": "app/analysis/yield/page.js",
-  "/analysis/page": "app/analysis/page.js"
-}
