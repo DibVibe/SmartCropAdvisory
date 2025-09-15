@@ -2,13 +2,14 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
 import { Providers } from "./providers";
-import { Navigation } from "@/components/Navigation";
-import { ToasterProvider } from "@/components/Common/ToasterProvider";
-import { LoadingProvider } from "@/components/Common/LoadingProvider";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { APIProvider } from "@/contexts/APIContext";
-import { HeaderBar } from "@/components/layout/HeaderBar";
-import { NotificationCenter } from "@/components/notifications/NotificationCenter";
+import { Navigation } from "../components/Navigation";
+import { ToasterProvider } from "../components/Common/ToasterProvider";
+import { LoadingProvider } from "../components/Common/LoadingProvider";
+import { AuthProvider } from "../contexts/AuthContext";
+import { APIProvider } from "../contexts/APIContext";
+import { HeaderBar } from "../components/layout/HeaderBar";
+import { NotificationCenter } from "../components/notifications/NotificationCenter";
+import { APIStatusIndicator } from "../components/APIStatusIndicator";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -24,6 +25,11 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
+  // ✅ FIXED: Add metadataBase to fix social media warnings
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
+      "http://localhost:3000"
+  ),
   title: {
     template: "%s | SmartCropAdvisory",
     default: "SmartCropAdvisory - AI-Powered Agricultural Intelligence System",
@@ -90,15 +96,7 @@ export const metadata: Metadata = {
       "Advanced agricultural intelligence system powered by AI and machine learning with Django API backend.",
     images: ["/og-image.png"],
   },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-  },
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#22c55e" },
-    { media: "(prefers-color-scheme: dark)", color: "#15803d" },
-  ],
+  // ✅ REMOVED: viewport and themeColor moved to viewport.ts
 };
 
 export default function RootLayout({
@@ -211,15 +209,5 @@ export default function RootLayout({
         </Providers>
       </body>
     </html>
-  );
-}
-
-// API Status Indicator Component
-function APIStatusIndicator() {
-  return (
-    <div className="flex items-center space-x-2">
-      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-      <span className="text-xs text-gray-500">Django API Connected</span>
-    </div>
   );
 }

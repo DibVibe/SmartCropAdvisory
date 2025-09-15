@@ -8,7 +8,6 @@ import React, {
   useCallback,
 } from "react";
 import { useRouter } from "next/navigation";
-import api from "@/lib/api";
 
 // Types
 interface User {
@@ -27,11 +26,6 @@ interface User {
   is_active: boolean;
   date_joined: string;
   last_login: string;
-}
-
-interface AuthTokens {
-  access: string;
-  refresh: string;
 }
 
 interface AuthContextType {
@@ -87,119 +81,130 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Get stored tokens
-  const getStoredTokens = (): AuthTokens | null => {
+  // Get API base URL
+  const getApiUrl = (endpoint: string) => {
+    const baseUrl =
+      process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1";
+    return `${baseUrl}${endpoint}`;
+  };
+
+  // Get stored token
+  const getStoredToken = (): string | null => {
     if (typeof window === "undefined") return null;
-
-    const access = localStorage.getItem("accessToken");
-    const refresh = localStorage.getItem("refreshToken");
-
-    return access && refresh ? { access, refresh } : null;
+    return localStorage.getItem("authToken");
   };
 
-  // Store tokens
-  const storeTokens = (tokens: AuthTokens) => {
-    localStorage.setItem("accessToken", tokens.access);
-    localStorage.setItem("refreshToken", tokens.refresh);
+  // Store token
+  const storeToken = (token: string) => {
+    localStorage.setItem("authToken", token);
   };
 
-  // Remove tokens
-  const removeTokens = () => {
+  // Remove token
+  const removeToken = () => {
+    localStorage.removeItem("authToken");
+    // Remove old JWT tokens if they exist
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
   };
 
-  // Fetch user profile
-  const fetchUserProfile = async (): Promise<User | null> => {
+  // fetchUserProfile function
+  const fetchUserProfile = async (token: string) => {
     try {
-      const response = await api.get("/users/profile/");
-      return response.data;
+      console.log(
+        "🔍 Fetching profile with token:",
+        token.substring(0, 20) + "..."
+      );
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/mongo-profile/`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("📡 Profile response status:", response.status);
+
+      if (response.ok) {
+        const responseData = await response.json();
+        console.log("✅ Profile data received:", responseData);
+
+        if (responseData.success && responseData.data) {
+          setUser(responseData.data);
+          return responseData.data;
+        } else {
+          console.log("❌ Profile response not successful:", responseData);
+          return null;
+        }
+      } else {
+        console.log("❌ Profile fetch failed with status:", response.status);
+        return null;
+      }
     } catch (error) {
-      console.error("Failed to fetch user profile:", error);
+      console.error("❌ Failed to fetch user profile:", error);
       return null;
     }
   };
 
-  // Refresh access token
-  const refreshToken = useCallback(async (): Promise<boolean> => {
-    try {
-      const tokens = getStoredTokens();
-      if (!tokens?.refresh) {
-        return false;
-      }
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_AUTH_URL}/token/refresh/`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ refresh: tokens.refresh }),
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        storeTokens({ access: data.access, refresh: tokens.refresh });
-        return true;
-      } else {
-        // Refresh token is invalid
-        await logout();
-        return false;
-      }
-    } catch (error) {
-      console.error("Token refresh failed:", error);
-      await logout();
-      return false;
-    }
-  }, []);
-
-  // Login function
+  // Login function - Updated to match your Django endpoint
   const login = async (
     username: string,
     password: string
   ): Promise<{ success: boolean; error?: string }> => {
     try {
       setLoading(true);
+      console.log("🔐 Attempting login for:", username);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_AUTH_URL}/token/`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ username, password }),
-        }
-      );
+      const response = await fetch(getApiUrl("/users/login/"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      console.log("📡 Login response status:", response.status);
 
       if (response.ok) {
-        const tokens: AuthTokens = await response.json();
-        storeTokens(tokens);
+        const data = await response.json();
+        console.log("✅ Login response:", data);
 
-        // Fetch user profile
-        const userProfile = await fetchUserProfile();
-        if (userProfile) {
-          setUser(userProfile);
+        // Your Django might return different token structure
+        // Adjust this based on your actual Django response
+        if (data.token || data.access || data.key) {
+          const token = data.token || data.access || data.key;
+          storeToken(token);
 
-          // Redirect to dashboard
-          router.push("/dashboard");
-
-          return { success: true };
+          // Fetch user profile
+          const userProfile = await fetchUserProfile();
+          if (userProfile) {
+            setUser(userProfile);
+            console.log("✅ Login successful");
+            return { success: true };
+          } else {
+            removeToken();
+            return { success: false, error: "Failed to load user profile" };
+          }
         } else {
-          removeTokens();
-          return { success: false, error: "Failed to load user profile" };
+          return { success: false, error: "No token received from server" };
         }
       } else {
-        const errorData = await response.json();
-        return {
-          success: false,
-          error:
+        let errorMessage = "Login failed";
+
+        try {
+          const errorData = await response.json();
+          errorMessage =
+            errorData.error ||
             errorData.detail ||
             errorData.non_field_errors?.[0] ||
-            "Login failed",
-        };
+            errorMessage;
+        } catch {
+          errorMessage = `Login failed: ${response.status} ${response.statusText}`;
+        }
+
+        return { success: false, error: errorMessage };
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -215,76 +220,89 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  // Logout function
+  // Logout function - Updated to match your Django endpoint
   const logout = async (): Promise<void> => {
     try {
-      const tokens = getStoredTokens();
-      if (tokens?.refresh) {
-        // Try to blacklist the refresh token
+      const token = getStoredToken();
+
+      if (token) {
+        // Call Django logout endpoint
         try {
-          await fetch(`${process.env.NEXT_PUBLIC_AUTH_URL}/token/blacklist/`, {
+          await fetch(getApiUrl("/users/logout/"), {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${tokens.access}`,
+              Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ refresh: tokens.refresh }),
           });
+          console.log("✅ Server logout successful");
         } catch (error) {
-          console.warn("Failed to blacklist token:", error);
+          console.warn("Failed to logout on server:", error);
+          // Don't throw error, continue with local logout
         }
       }
     } finally {
-      // Always clear local state and storage
-      removeTokens();
+      // Always clear local state
+      removeToken();
       setUser(null);
+      console.log("👋 Local logout completed");
       router.push("/login");
     }
   };
 
-  // Register function
+  // Register function - Updated to match your Django endpoint
   const register = async (
     userData: RegisterData
   ): Promise<{ success: boolean; error?: string }> => {
     try {
       setLoading(true);
+      console.log("📝 Attempting registration for:", userData.username);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/register/`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(userData),
-        }
-      );
+      const response = await fetch(getApiUrl("/users/register/"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userData),
+      });
+
+      console.log("📡 Registration response status:", response.status);
 
       if (response.ok) {
         const result = await response.json();
+        console.log("✅ Registration response:", result);
 
-        // Auto-login after successful registration
-        if (result.tokens) {
-          storeTokens(result.tokens);
+        // Check if auto-login token is provided
+        if (result.token || result.access || result.key) {
+          const token = result.token || result.access || result.key;
+          storeToken(token);
+
           const userProfile = await fetchUserProfile();
           if (userProfile) {
             setUser(userProfile);
-            router.push("/dashboard");
+            console.log("✅ Registration and auto-login successful");
             return { success: true };
           }
         }
 
         // If no auto-login, redirect to login
-        router.push("/login?message=Registration successful. Please log in.");
+        console.log("✅ Registration successful, redirect to login");
         return { success: true };
       } else {
-        const errorData = await response.json();
-        const errorMessage =
-          errorData.detail ||
-          errorData.username?.[0] ||
-          errorData.email?.[0] ||
-          errorData.password?.[0] ||
-          "Registration failed";
+        let errorMessage = "Registration failed";
+
+        try {
+          const errorData = await response.json();
+          errorMessage =
+            errorData.detail ||
+            errorData.username?.[0] ||
+            errorData.email?.[0] ||
+            errorData.password?.[0] ||
+            errorMessage;
+        } catch {
+          errorMessage = `Registration failed: ${response.status} ${response.statusText}`;
+        }
+
         return { success: false, error: errorMessage };
       }
     } catch (error) {
@@ -301,28 +319,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  // Refresh token - Simplified since your Django may not use JWT refresh pattern
+  const refreshToken = useCallback(async (): Promise<boolean> => {
+    try {
+      const token = getStoredToken();
+      if (!token) return false;
+
+      // Try to fetch user profile to validate token
+      const userProfile = await fetchUserProfile();
+      if (userProfile) {
+        setUser(userProfile);
+        return true;
+      } else {
+        // Token is invalid
+        await logout();
+        return false;
+      }
+    } catch (error) {
+      console.error("Token validation failed:", error);
+      await logout();
+      return false;
+    }
+  }, []);
+
   // Update profile function
   const updateProfile = async (
     data: Partial<User["profile"]>
   ): Promise<{ success: boolean; error?: string }> => {
     try {
-      const response = await api.patch("/users/profile/", data);
-
-      if (response.data) {
-        setUser((prev) =>
-          prev ? { ...prev, profile: { ...prev.profile, ...data } } : null
-        );
-        return { success: true };
+      const token = getStoredToken();
+      if (!token) {
+        return { success: false, error: "Not authenticated" };
       }
-      return { success: false, error: "Failed to update profile" };
+
+      const response = await fetch(getApiUrl("/users/profile/"), {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        const updatedUser = await response.json();
+        setUser(updatedUser);
+        return { success: true };
+      } else {
+        const errorData = await response.json();
+        return {
+          success: false,
+          error: errorData.detail || "Failed to update profile",
+        };
+      }
     } catch (error: any) {
       console.error("Profile update error:", error);
       return {
         success: false,
-        error:
-          error.response?.data?.detail ||
-          error.message ||
-          "Failed to update profile",
+        error: error.message || "Failed to update profile",
       };
     }
   };
@@ -333,24 +387,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     newPassword: string
   ): Promise<{ success: boolean; error?: string }> => {
     try {
-      const response = await api.post("/users/change-password/", {
-        old_password: oldPassword,
-        new_password: newPassword,
+      const token = getStoredToken();
+      if (!token) {
+        return { success: false, error: "Not authenticated" };
+      }
+
+      const response = await fetch(getApiUrl("/users/change-password/"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          old_password: oldPassword,
+          new_password: newPassword,
+        }),
       });
 
-      if (response.status === 200) {
+      if (response.ok) {
         return { success: true };
+      } else {
+        const errorData = await response.json();
+        return {
+          success: false,
+          error:
+            errorData.detail ||
+            errorData.old_password?.[0] ||
+            errorData.new_password?.[0] ||
+            "Failed to change password",
+        };
       }
-      return { success: false, error: "Failed to change password" };
     } catch (error: any) {
       console.error("Password change error:", error);
       return {
         success: false,
-        error:
-          error.response?.data?.detail ||
-          error.response?.data?.old_password?.[0] ||
-          error.response?.data?.new_password?.[0] ||
-          "Failed to change password",
+        error: error.message || "Failed to change password",
       };
     }
   };
@@ -358,45 +429,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   // Initialize authentication state
   useEffect(() => {
     const initAuth = async () => {
-      const tokens = getStoredTokens();
+      console.log("🚀 Initializing auth state...");
+      const token = getStoredToken();
 
-      if (tokens) {
-        // Verify token and fetch user profile
+      if (token) {
+        console.log("🔑 Token found, validating...");
         const userProfile = await fetchUserProfile();
         if (userProfile) {
           setUser(userProfile);
+          console.log("✅ Auth state initialized with user");
         } else {
-          // Try to refresh token
-          const refreshed = await refreshToken();
-          if (refreshed) {
-            const retryProfile = await fetchUserProfile();
-            if (retryProfile) {
-              setUser(retryProfile);
-            } else {
-              removeTokens();
-            }
-          } else {
-            removeTokens();
-          }
+          console.log("❌ Token validation failed, clearing");
+          removeToken();
         }
+      } else {
+        console.log("ℹ️ No token found");
       }
 
       setLoading(false);
     };
 
     initAuth();
-  }, [refreshToken]);
+  }, []);
 
-  // Auto-refresh token before expiry
+  // Periodic token validation (every 30 minutes)
   useEffect(() => {
     if (!user) return;
 
-    // Refresh token every 50 minutes (tokens expire in 60 minutes)
     const interval = setInterval(
       () => {
+        console.log("🔄 Validating token...");
         refreshToken();
       },
-      50 * 60 * 1000
+      30 * 60 * 1000
     );
 
     return () => clearInterval(interval);

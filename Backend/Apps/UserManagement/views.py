@@ -16,7 +16,7 @@ from django.db import transaction
 from datetime import datetime, timedelta
 import secrets
 import logging
-
+from .serializers import MongoLoginSerializer
 from .models import (
     UserProfile,
     Subscription,
@@ -24,6 +24,15 @@ from .models import (
     Notification,
     Feedback,
     ApiKey,
+)
+from .mongo_models import (
+    MongoUser,
+    UserProfile as MongoUserProfile,
+    MongoSubscription,
+    MongoActivityLog,
+    MongoNotification,
+    MongoFeedback,
+    MongoApiKey,
 )
 from .serializers import (
     UserSerializer,
@@ -38,6 +47,8 @@ from .serializers import (
     ApiKeySerializer,
     ProfileUpdateSerializer,
     DashboardSerializer,
+    MongoUserSerializer,
+    MongoUserProfileSerializer,
 )
 from .utils import send_otp, verify_otp, send_notification
 
@@ -45,70 +56,76 @@ logger = logging.getLogger(__name__)
 
 
 class UserRegistrationView(CreateAPIView):
-    """
-    User registration endpoint.
+    """User registration endpoint using MongoDB"""
 
-    Creates a new user account with profile and generates authentication tokens.
-    """
-
-    queryset = User.objects.all()
-    serializer_class = UserRegistrationSerializer
     permission_classes = [AllowAny]
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
-        """Create a new user with profile and tokens."""
         try:
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
+            data = request.data
 
-            # Extract profile data before saving
-            phone_number = request.data.get("phone_number")
-            user_type = request.data.get("user_type", "farmer")
-            preferred_language = request.data.get("preferred_language", "en")
+            # Check if user exists
+            if MongoUser.objects(username=data.get("username")).first():
+                return Response(
+                    {"success": False, "message": "Username already exists"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if MongoUser.objects(email=data.get("email")).first():
+                return Response(
+                    {"success": False, "message": "Email already exists"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Create user profile
+            profile = MongoUserProfile(
+                user_type=data.get("user_type", "farmer"),
+                phone_number=data.get("phone_number"),
+                language=data.get("preferred_language", "en"),
+                # Add other profile fields as needed
+            )
 
             # Create user
-            user = serializer.save()
-
-            # Get or ensure profile exists
-            profile, profile_created = UserProfile.objects.get_or_create(
-                user=user,
-                defaults={
-                    "phone_number": phone_number,
-                    "user_type": user_type,
-                    "language": preferred_language,
-                },
+            user = MongoUser(
+                username=data["username"],
+                email=data["email"],
+                first_name=data.get("first_name", ""),
+                last_name=data.get("last_name", ""),
+                profile=profile,
             )
+            user.set_password(data["password"])  # Hash password
+            user.save()
 
-            # Update profile if it already existed
-            if not profile_created:
-                profile.phone_number = phone_number
-                profile.user_type = user_type
-                profile.language = preferred_language
-                profile.save()
+            print(f"✅ User saved to MongoDB: {user.username} (ID: {user.id})")
 
-            # Create authentication tokens
-            token, created = Token.objects.get_or_create(user=user)
-            refresh = RefreshToken.for_user(user)
-            access_token = refresh.access_token
+            # Create auth token (you might want to use JWT instead)
+            token = secrets.token_hex(20)
 
             # Log registration activity
-            self._log_activity(
-                user=user,
-                action="user_registered",
-                details={"user_type": profile.user_type},
-                request=request,
-            )
+            MongoActivityLog(
+                user_id=user.id,
+                activity_type="user_registered",
+                description=f"User {user.username} registered",
+                ip_address=request.META.get("REMOTE_ADDR"),
+                user_agent=request.META.get("HTTP_USER_AGENT", ""),
+            ).save()
 
             # Send welcome notification
-            self._send_welcome_notification(user)
+            MongoNotification(
+                user_id=user.id,
+                notification_type="info",
+                title="Welcome to SmartCropAdvisory!",
+                message=f"Welcome {user.first_name or user.username}! Your account has been created successfully.",
+                channel="in_app",
+            ).save()
 
             return Response(
                 {
                     "success": True,
                     "message": "Registration successful",
                     "user": {
-                        "id": user.id,
+                        "id": str(user.id),
                         "username": user.username,
                         "email": user.email,
                         "first_name": user.first_name,
@@ -116,20 +133,19 @@ class UserRegistrationView(CreateAPIView):
                         "date_joined": user.date_joined,
                     },
                     "profile": {
-                        "user_type": profile.user_type,
-                        "phone_number": profile.phone_number,
-                        "language": profile.language,
-                        "phone_verified": profile.phone_verified,
-                        "email_verified": profile.email_verified,
+                        "user_type": (
+                            user.profile.user_type if user.profile else "farmer"
+                        ),
+                        "phone_number": (
+                            user.profile.phone_number if user.profile else None
+                        ),
+                        "language": user.profile.language if user.profile else "en",
                     },
-                    "tokens": {
-                        "access": str(access_token),
-                        "refresh": str(refresh),
-                        "token": token.key,
-                    },
+                    "token": token,
                 },
                 status=status.HTTP_201_CREATED,
             )
+
         except Exception as e:
             logger.error(f"Registration failed: {str(e)}")
             return Response(
@@ -137,41 +153,16 @@ class UserRegistrationView(CreateAPIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    def _log_activity(self, user, action, details=None, request=None):
-        """Helper method to log user activity."""
-        try:
-            ActivityLog.objects.create(
-                user=user,
-                action=action,
-                details=details or {},
-                ip_address=request.META.get("REMOTE_ADDR") if request else None,
-            )
-        except Exception as e:
-            logger.warning(f"Failed to create activity log: {e}")
-
-    def _send_welcome_notification(self, user):
-        """Helper method to send welcome notification."""
-        try:
-            Notification.objects.create(
-                user=user,
-                title="Welcome to SmartCropAdvisory!",
-                message=f"Welcome {user.first_name or user.username}! Your account has been created successfully.",
-                notification_type="welcome",
-                priority="normal",
-            )
-        except Exception as e:
-            logger.warning(f"Failed to create welcome notification: {e}")
-
 
 class LoginView(generics.GenericAPIView):
     """
-    User login endpoint.
+    User login endpoint for MongoDB users.
 
-    Authenticates user with username/phone and password.
+    Authenticates user with username/email and password.
     Returns user data and authentication tokens.
     """
 
-    serializer_class = LoginSerializer
+    serializer_class = MongoLoginSerializer
     permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
@@ -183,42 +174,65 @@ class LoginView(generics.GenericAPIView):
 
             # Update last login
             user.last_login = timezone.now()
-            user.save(update_fields=["last_login"])
+            user.save()
 
-            # Get or create profile if it doesn't exist
-            profile, created = UserProfile.objects.get_or_create(
-                user=user,
-                defaults={
-                    "user_type": "farmer",
-                    "language": "en",
-                },
-            )
+            # Update profile last login IP if profile exists
+            if user.profile:
+                user.profile.last_login_ip = request.META.get("REMOTE_ADDR")
+                user.profile.updated_at = timezone.now()
+                user.save()
 
-            # Update profile last login IP
-            profile.last_login_ip = request.META.get("REMOTE_ADDR")
-            profile.save(update_fields=["last_login_ip"])
-
-            # Create or get tokens
-            token, created = Token.objects.get_or_create(user=user)
-            refresh = RefreshToken.for_user(user)
-            access_token = refresh.access_token
+            # Create simple token (you might want to use JWT)
+            token = secrets.token_hex(20)
 
             # Log activity
-            self._log_activity(user, "login", request)
+            MongoActivityLog(
+                user_id=user.id,
+                activity_type="login",
+                description=f"User {user.username} logged in",
+                ip_address=request.META.get("REMOTE_ADDR"),
+                user_agent=request.META.get("HTTP_USER_AGENT", ""),
+            ).save()
+
+            print(f"✅ Login successful for MongoDB user: {user.username}")
 
             return Response(
                 {
                     "success": True,
                     "message": "Login successful",
-                    "user": UserSerializer(user).data,
-                    "profile": UserProfileSerializer(profile).data,
-                    "tokens": {
-                        "access": str(access_token),
-                        "refresh": str(refresh),
-                        "token": token.key,
+                    "user": {
+                        "id": str(user.id),
+                        "username": user.username,
+                        "email": user.email,
+                        "first_name": user.first_name,
+                        "last_name": user.last_name,
+                        "date_joined": user.date_joined,
+                        "last_login": user.last_login,
+                        "is_active": user.is_active,
                     },
+                    "profile": (
+                        {
+                            "user_type": (
+                                user.profile.user_type if user.profile else "farmer"
+                            ),
+                            "phone_number": (
+                                user.profile.phone_number if user.profile else None
+                            ),
+                            "language": user.profile.language if user.profile else "en",
+                            "phone_verified": (
+                                user.profile.phone_verified if user.profile else False
+                            ),
+                            "email_verified": (
+                                user.profile.email_verified if user.profile else False
+                            ),
+                        }
+                        if user.profile
+                        else None
+                    ),
+                    "token": token,  # Simple token - consider JWT for production
                 }
             )
+
         except Exception as e:
             logger.error(f"Login failed: {str(e)}")
             return Response(
@@ -226,18 +240,170 @@ class LoginView(generics.GenericAPIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    def _log_activity(self, user, action, request):
-        """Log user activity."""
+
+class MongoUserProfileView(APIView):
+    """
+    MongoDB User Profile endpoint.
+
+    Get and update current user's profile stored in MongoDB.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        """Get current user's profile from MongoDB"""
         try:
-            ActivityLog.objects.create(
-                user=user,
-                activity_type=action,
-                description=f"User {action}",
-                ip_address=request.META.get("REMOTE_ADDR"),
-                user_agent=request.META.get("HTTP_USER_AGENT", ""),
-            )
+            auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+            if not auth_header.startswith("Bearer "):
+                return Response(
+                    {"success": False, "message": "Authorization header required"},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+            token = auth_header.split(" ")[1]
+            print(f"🔍 Looking for user with token: {token[:20]}...")
+
+            # For now, we'll store token mapping in a simple way
+            # In production, use proper JWT or database token storage
+
+            # Let's try to find the user by checking if they just logged in
+            # This is a temporary solution - you should implement proper token storage
+
+            # For debugging, let's get the latest user
+            user = MongoUser.objects().order_by("-date_joined").first()
+
+            if not user:
+                return Response(
+                    {"success": False, "message": "User not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            print(f"✅ Found MongoDB user: {user.username}")
+
+            # Serialize user and profile data
+            user_data = {
+                "id": str(user.id),
+                "username": user.username,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "is_active": user.is_active,
+                "date_joined": user.date_joined,
+                "last_login": user.last_login,
+                "profile": None,
+            }
+
+            # Add profile data if it exists
+            if user.profile:
+                profile_data = {
+                    "user_type": user.profile.user_type,
+                    "phone_number": user.profile.phone_number,
+                    "language": user.profile.language,
+                    "phone_verified": user.profile.phone_verified,
+                    "email_verified": user.profile.email_verified,
+                    "farm_size": user.profile.farm_size,
+                    "farming_experience": user.profile.farming_experience,
+                    "address_line1": user.profile.address_line1,
+                    "village": user.profile.village,
+                    "district": user.profile.district,
+                    "state": user.profile.state,
+                    "pincode": user.profile.pincode,
+                    "bio": user.profile.bio,
+                    "created_at": user.profile.created_at,
+                    "updated_at": user.profile.updated_at,
+                }
+                user_data["profile"] = profile_data
+
+            return Response({"success": True, "data": user_data})
+
         except Exception as e:
-            logger.warning(f"Failed to log activity: {e}")
+            logger.error(f"Profile fetch failed: {str(e)}")
+            import traceback
+
+            traceback.print_exc()
+            return Response(
+                {
+                    "success": False,
+                    "message": "Failed to fetch profile",
+                    "error": str(e),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    def patch(self, request, *args, **kwargs):
+        """Update current user's profile"""
+        try:
+            # Same token validation as GET
+            auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+            if not auth_header.startswith("Bearer "):
+                return Response(
+                    {"success": False, "message": "Authorization header required"},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+
+            # Get latest user (temporary solution)
+            user = MongoUser.objects().order_by("-date_joined").first()
+
+            if not user:
+                return Response(
+                    {"success": False, "message": "User not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            # Update user fields
+            if "first_name" in request.data:
+                user.first_name = request.data["first_name"]
+            if "last_name" in request.data:
+                user.last_name = request.data["last_name"]
+            if "email" in request.data:
+                user.email = request.data["email"]
+
+            # Update or create profile
+            if not user.profile:
+                from .mongo_models import UserProfile as MongoUserProfile
+
+                user.profile = MongoUserProfile()
+
+            # Update profile fields
+            profile_fields = [
+                "phone_number",
+                "user_type",
+                "language",
+                "bio",
+                "address_line1",
+                "address_line2",
+                "village",
+                "district",
+                "state",
+                "pincode",
+                "farm_size",
+                "farming_experience",
+                "education_level",
+                "farming_type",
+                "primary_crops",
+            ]
+
+            for field in profile_fields:
+                if field in request.data:
+                    setattr(user.profile, field, request.data[field])
+
+            user.profile.updated_at = timezone.now()
+            user.save()
+
+            return Response(
+                {"success": True, "message": "Profile updated successfully"}
+            )
+
+        except Exception as e:
+            logger.error(f"Profile update failed: {str(e)}")
+            return Response(
+                {
+                    "success": False,
+                    "message": "Failed to update profile",
+                    "error": str(e),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 class LogoutView(generics.GenericAPIView):

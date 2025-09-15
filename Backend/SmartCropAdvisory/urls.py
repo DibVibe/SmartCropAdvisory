@@ -10,7 +10,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import RedirectView
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render
 
 # Import your views
@@ -19,6 +19,75 @@ from . import views
 # ==========================================
 # 🔗 FALLBACK DOCUMENTATION VIEWS
 # ==========================================
+
+
+def api_v1_root(request):
+    """API v1 root endpoint - lists all available endpoints"""
+    v1_endpoints = {
+        "version": "v1",
+        "title": "🌾 SmartCropAdvisory API v1",
+        "description": "AI-Powered Agricultural Intelligence System",
+        "base_url": request.build_absolute_uri("/api/v1/"),
+        "endpoints": {
+            "🌱 crop": {
+                "url": request.build_absolute_uri("/api/v1/crop/"),
+                "description": "Crop analysis, disease detection, yield prediction",
+            },
+            "🌤️ weather": {
+                "url": request.build_absolute_uri("/api/v1/weather/"),
+                "description": "Weather data, forecasts, and climate analysis",
+            },
+            "💧 irrigation": {
+                "url": request.build_absolute_uri("/api/v1/irrigation/"),
+                "description": "Smart irrigation scheduling and water management",
+            },
+            "📈 market": {
+                "url": request.build_absolute_uri("/api/v1/market/"),
+                "description": "Market analysis, price predictions, and trends",
+            },
+            "👤 users": {
+                "url": request.build_absolute_uri("/api/v1/users/"),
+                "description": "User management, authentication, and profiles",
+            },
+            "🎯 advisory": {
+                "url": request.build_absolute_uri("/api/v1/advisory/"),
+                "description": "Agricultural advisory services and alerts",
+            },
+        },
+        "authentication": {
+            "login": request.build_absolute_uri("/api/v1/users/login/"),
+            "register": request.build_absolute_uri("/api/v1/users/register/"),
+            "format": "Authorization: Bearer <your_jwt_token>",
+        },
+        "system": {
+            "health": request.build_absolute_uri("/api/health/"),
+            "status": request.build_absolute_uri("/api/status/"),
+            "docs": request.build_absolute_uri("/api/docs/"),
+        },
+    }
+
+    return JsonResponse(v1_endpoints, json_dumps_params={"indent": 2})
+
+
+def cors_test(request):
+    """CORS debugging endpoint"""
+    response_data = {
+        "cors_test": "✅ CORS working",
+        "origin": request.META.get("HTTP_ORIGIN", "Not provided"),
+        "method": request.method,
+        "headers": {
+            "User-Agent": request.META.get("HTTP_USER_AGENT", "Unknown"),
+            "Accept": request.META.get("HTTP_ACCEPT", "Unknown"),
+        },
+        "message": "If you can see this from your frontend, CORS is working!",
+    }
+
+    response = JsonResponse(response_data)
+    # Add explicit CORS headers for testing
+    response["Access-Control-Allow-Origin"] = request.META.get("HTTP_ORIGIN", "*")
+    response["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    return response
 
 
 def api_documentation_fallback(request):
@@ -61,7 +130,7 @@ def api_documentation_fallback(request):
         "authentication": {
             "JWT": "Authorization: Bearer <your_token_here>",
             "Token": "Authorization: Token <your_token_here>",
-            "note": "Obtain tokens via /api/v1/users/auth/",
+            "note": "Obtain tokens via /api/v1/users/login/",
         },
         "usage": {
             "browse_api": "Visit individual endpoints to see DRF's built-in documentation",
@@ -181,17 +250,27 @@ def api_changelog(request):
     return render(request, "changelog.html", {"changelog": changelog["changelog"]})
 
 
+def favicon_view(request):
+    """Proper favicon handling"""
+    return HttpResponse(status=204)  # No content response
+
+
 # ==========================================
 # 🔗 URL PATTERNS
 # ==========================================
 
 urlpatterns = [
     # ==========================================
-    # 🏠 HOMEPAGE
+    # 🏠 HOMEPAGE & ROOT ENDPOINTS
     # ==========================================
     path("", views.home, name="home"),
     path("api/", views.api_overview, name="api-overview"),
-    path("favicon.ico", RedirectView.as_view(url=settings.STATIC_URL + "favicon.ico")),
+    path("api/v1/", api_v1_root, name="api-v1-root"),  # 🆕 NEW: API v1 root
+    path("favicon.ico", favicon_view, name="favicon"),  # 🔧 IMPROVED
+    # ==========================================
+    # 🧪 DEBUG & TESTING ENDPOINTS
+    # ==========================================
+    path("api/test/cors/", cors_test, name="cors-test"),  # 🆕 NEW: CORS testing
     # ==========================================
     # 🏛️ ADMIN INTERFACE
     # ==========================================
@@ -199,11 +278,10 @@ urlpatterns = [
     # ==========================================
     # 📊 API DOCUMENTATION
     # ==========================================
-    # Conditional spectacular documentation (disabled by default due to MongoEngine issues)
 ]
 
 # Add Spectacular URLs only if explicitly enabled and working
-if not getattr(settings, "DISABLE_SPECTACULAR", True):  # Default to True (disabled)
+if not getattr(settings, "DISABLE_SPECTACULAR", True):
     try:
         from drf_spectacular.views import (
             SpectacularAPIView,
@@ -238,35 +316,43 @@ fallback_docs_urls = [
     path("api/schema/", schema_fallback, name="schema-fallback"),
     path("api/docs/", api_documentation_fallback, name="api-docs-fallback"),
     path("api/redoc/", api_documentation_fallback, name="redoc-fallback"),
-    # 🆕 ADD CHANGELOG ENDPOINT
     path("api/changelog/", api_changelog, name="api-changelog"),
 ]
 
 urlpatterns.extend(fallback_docs_urls)
 
-# Continue with your existing URLs
-urlpatterns.extend(
-    [
-        # ==========================================
-        # 🌾 API ENDPOINTS - AGRICULTURAL APPS
-        # ==========================================
-        path("api/v1/crop/", include("Apps.CropAnalysis.urls")),
-        path("api/v1/weather/", include("Apps.WeatherIntegration.urls")),
-        path("api/v1/irrigation/", include("Apps.IrrigationAdvisor.urls")),
-        path("api/v1/market/", include("Apps.MarketAnalysis.urls")),
-        path("api/v1/users/", include("Apps.UserManagement.urls")),
-        path("api/v1/advisory/", include("Apps.Advisory.urls")),
-        # ==========================================
-        # 🏥 SYSTEM HEALTH & MONITORING
-        # ==========================================
-        path("api/health/", include("health_check.urls")),
-        path("api/status/", include("Apps.SystemStatus.urls")),
-        # ==========================================
-        # ⚱️ SEO & ROBOTS
-        # ==========================================
-        path("robots.txt", include("robots.urls")),
-    ]
-)
+# ==========================================
+# 🌾 API ENDPOINTS - AGRICULTURAL APPS
+# ==========================================
+api_v1_urls = [
+    path("api/v1/crop/", include("Apps.CropAnalysis.urls")),
+    path("api/v1/weather/", include("Apps.WeatherIntegration.urls")),
+    path("api/v1/irrigation/", include("Apps.IrrigationAdvisor.urls")),
+    path("api/v1/market/", include("Apps.MarketAnalysis.urls")),
+    path("api/v1/users/", include("Apps.UserManagement.urls")),
+    path("api/v1/advisory/", include("Apps.Advisory.urls")),
+]
+
+urlpatterns.extend(api_v1_urls)
+
+# ==========================================
+# 🏥 SYSTEM HEALTH & MONITORING
+# ==========================================
+system_urls = [
+    path("api/health/", include("health_check.urls")),
+    path("api/status/", include("Apps.SystemStatus.urls")),
+]
+
+urlpatterns.extend(system_urls)
+
+# ==========================================
+# ⚱️ SEO & ROBOTS
+# ==========================================
+seo_urls = [
+    path("robots.txt", include("robots.urls")),
+]
+
+urlpatterns.extend(seo_urls)
 
 # ==========================================
 # 🛠️ DEVELOPMENT TOOLS (DEBUG MODE ONLY)
@@ -274,7 +360,6 @@ urlpatterns.extend(
 
 # Add Debug Toolbar URLs (conditionally)
 if settings.DEBUG and not getattr(settings, "TESTING", False):
-    # Check if debug_toolbar is in INSTALLED_APPS
     if "debug_toolbar" in settings.INSTALLED_APPS:
         try:
             import debug_toolbar
@@ -308,12 +393,16 @@ if settings.DEBUG:
 🏠 Homepage: http://127.0.0.1:8000/
 📊 API Documentation:
    • API Overview: http://127.0.0.1:8000/api/
+   • API v1 Root: http://127.0.0.1:8000/api/v1/  🆕
    • Simple Docs: http://127.0.0.1:8000/api/docs/
    • Changelog: http://127.0.0.1:8000/api/changelog/
    • JSON Format: http://127.0.0.1:8000/api/docs/?format=json
    • Schema Status: {spectacular_status}
 
-🌾 API Endpoints:
+🧪 Testing Endpoints:
+   • CORS Test: http://127.0.0.1:8000/api/test/cors/  🆕
+
+🌾 API v1 Endpoints:
    • Crops: http://127.0.0.1:8000/api/v1/crop/
    • Weather: http://127.0.0.1:8000/api/v1/weather/
    • Irrigation: http://127.0.0.1:8000/api/v1/irrigation/
@@ -323,9 +412,11 @@ if settings.DEBUG:
 
 🏛️ Admin Interface: http://127.0.0.1:8000/admin/
 🏥 Health Check: http://127.0.0.1:8000/api/health/
+📊 System Status: http://127.0.0.1:8000/api/status/
 🛠️ Debug Toolbar: {'http://127.0.0.1:8000/__debug__/' if 'debug_toolbar' in settings.INSTALLED_APPS else 'Not Available'}
 ================================
-💡 Tip: Use DRF's browsable API by visiting endpoints directly
-📝 Each endpoint supports OPTIONS method for field details
+💡 Frontend Testing Commands:
+fetch('http://localhost:8000/api/v1/')  // API root
+fetch('http://localhost:8000/api/test/cors/')  // CORS test
     """
     )

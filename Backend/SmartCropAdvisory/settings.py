@@ -16,7 +16,7 @@ warnings.filterwarnings(
 # Note: Removed the AttributeError filterwarnings as it's not a Warning subclass
 
 # Standard library imports
-import sys
+import sys, os, json
 from pathlib import Path
 from decouple import config, Csv
 from django.core.management.utils import get_random_secret_key
@@ -25,6 +25,15 @@ from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# ==========================================
+# 🔐 Load Shared Config
+# ==========================================
+with open(os.path.join(BASE_DIR, "../shared-config.json")) as f:
+    SHARED_CONFIG = json.load(f)
+
+SITE_NAME = SHARED_CONFIG["app"]["name"]
+API_VERSION = SHARED_CONFIG["development"]["api_version"]
 
 # ==========================================
 # 🔐 SECURITY SETTINGS

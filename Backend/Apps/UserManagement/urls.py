@@ -1,4 +1,3 @@
-# Apps/UserManagement/urls.py
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
@@ -14,6 +13,7 @@ from .views import (
     ApiKeyViewSet,
     UserDashboardView,
     UserStatisticsView,
+    MongoUserProfileView,
 )
 
 router = DefaultRouter()
@@ -63,6 +63,8 @@ urlpatterns = [
         UserProfileViewSet.as_view({"post": "verify_phone"}),
         name="verify-phone",
     ),
+    # MongoDB endpoint for user profile
+    path("mongo-profile/", MongoUserProfileView.as_view(), name="mongo-profile"),
     # Notification shortcuts
     path(
         "notifications/unread/",
