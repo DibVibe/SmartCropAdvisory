@@ -11,9 +11,15 @@ import {
 } from '@heroicons/react/24/outline'
 
 export default function DiseaseDetectionPage() {
-  const [selectedImage, setSelectedImage] = useState(null)
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [detectionResults, setDetectionResults] = useState(null)
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false)
+  const [detectionResults, setDetectionResults] = useState<{
+    disease: string;
+    confidence: number;
+    severity: 'Low' | 'Medium' | 'High';
+    treatment: string;
+    recommendations: string[];
+  } | null>(null)
 
   const commonDiseases = [
     {
@@ -80,8 +86,8 @@ export default function DiseaseDetectionPage() {
     }
   ]
 
-  const handleImageUpload = (event) => {
-    const file = event.target.files[0]
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
     if (file) {
       setSelectedImage(file)
       // Simulate analysis

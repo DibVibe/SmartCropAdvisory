@@ -4,7 +4,23 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { User } from "@/types/api";
+type User = {
+  id: string;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  profile?: {
+    farm_name?: string;
+    location?: string;
+    phone_number?: string;
+    farm_size?: number;
+    crops?: string[];
+  };
+  is_active: boolean;
+  date_joined: string;
+  last_login?: string;
+};
 import {
   UserIcon,
   Cog6ToothIcon,
@@ -303,7 +319,7 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
           <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
             <div className="flex items-center justify-between text-xs text-gray-500">
               <span>
-                Last login: {new Date(user.last_login).toLocaleDateString()}
+                Last login: {user.last_login ? new Date(user.last_login).toLocaleDateString() : 'N/A'}
               </span>
               <span className="flex items-center">
                 <span className="w-2 h-2 bg-green-400 rounded-full mr-1"></span>

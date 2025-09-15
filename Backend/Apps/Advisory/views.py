@@ -689,6 +689,32 @@ class AdvisoryAlertViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+    @action(detail=False, methods=["get"])
+    def recent(self, request):
+        """Return most recent alerts across user's farms with optional limit."""
+        try:
+            limit = int(request.query_params.get("limit", 10))
+            queryset = self.get_queryset()[: max(0, min(limit, 100))]
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(
+                {
+                    "success": True,
+                    "message": "Recent alerts retrieved successfully",
+                    "data": serializer.data,
+                    "count": len(serializer.data),
+                }
+            )
+        except Exception as e:
+            logger.error(f"Failed to get recent alerts: {e}")
+            return Response(
+                {
+                    "success": False,
+                    "message": "Failed to retrieve recent alerts",
+                    "error": str(e),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
     @action(detail=True, methods=["post"])
     def mark_read(self, request, pk=None):
         """Mark alert as read."""

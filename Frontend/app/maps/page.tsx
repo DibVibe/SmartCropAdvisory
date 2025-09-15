@@ -16,9 +16,21 @@ import {
 } from '@heroicons/react/24/outline'
 
 export default function MapsPage() {
-  const [activeTab, setActiveTab] = useState('fields')
-  const [selectedField, setSelectedField] = useState(null)
-  const [mapMode, setMapMode] = useState('satellite') // satellite, terrain, hybrid
+  const [activeTab, setActiveTab] = useState<'fields' | 'zones' | 'analysis' | 'settings'>('fields')
+  type Field = {
+    id: number;
+    name: string;
+    area: string;
+    crop: string;
+    plantingDate: string;
+    coordinates: { lat: number; lng: number };
+    zones: number;
+    sensors: number;
+    status: string;
+    color: string;
+  }
+  const [selectedField, setSelectedField] = useState<Field | null>(null)
+  const [mapMode, setMapMode] = useState<'satellite' | 'terrain' | 'hybrid'>('satellite') // satellite, terrain, hybrid
   const [showLayers, setShowLayers] = useState({
     boundaries: true,
     sensors: true,
@@ -143,7 +155,7 @@ export default function MapsPage() {
             </div>
             <select 
               value={mapMode}
-              onChange={(e) => setMapMode(e.target.value)}
+              onChange={(e) => setMapMode(e.target.value as 'satellite' | 'terrain' | 'hybrid')}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
             >
               <option value="satellite">Satellite View</option>
@@ -164,7 +176,7 @@ export default function MapsPage() {
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
+                    onClick={() => setActiveTab(tab.id as 'fields' | 'zones' | 'analysis' | 'settings')}
                     className={`
                       flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-colors
                       ${activeTab === tab.id

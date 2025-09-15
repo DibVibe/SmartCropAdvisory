@@ -1,219 +1,296 @@
-'use client'
+"use client";
 
-import { useState, useCallback } from 'react'
-import { useDropzone } from 'react-dropzone'
-import { PhotoIcon, CloudArrowUpIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { useState, useRef } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  PhotoIcon,
+  CloudArrowUpIcon,
+  ExclamationTriangleIcon,
+} from "@heroicons/react/24/outline";
 
-interface CropAnalysisFormProps {
-  onAnalysisComplete: (results: any) => void
+interface AnalysisResult {
+  success: boolean;
+  data?: {
+    crop_health: string;
+    recommendations: string[];
+    confidence: number;
+    analysis_type: string;
+    crop_type: string;
+    image_stats?: {
+      avg_green_intensity: number;
+      avg_brightness: number;
+      dimensions: string;
+    };
+    timestamp: string;
+  };
+  message?: string;
 }
 
-export function CropAnalysisForm({ onAnalysisComplete }: CropAnalysisFormProps) {
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
-  const [cropType, setCropType] = useState('')
-  const [growthStage, setGrowthStage] = useState('')
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [analysisProgress, setAnalysisProgress] = useState(0)
+interface CropAnalysisFormProps {
+  onAnalysisComplete: (result: AnalysisResult) => void;
+}
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    setSelectedFiles(prev => [...prev, ...acceptedFiles])
-  }, [])
+export function CropAnalysisForm({
+  onAnalysisComplete,
+}: CropAnalysisFormProps) {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [cropType, setCropType] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'image/*': ['.jpeg', '.jpg', '.png', '.webp']
-    },
-    maxSize: 10 * 1024 * 1024, // 10MB
-    multiple: true
-  })
+  const cropTypes = [
+    { value: "wheat", label: "🌾 Wheat" },
+    { value: "corn", label: "🌽 Corn" },
+    { value: "rice", label: "🌾 Rice" },
+    { value: "soybean", label: "🌱 Soybean" },
+    { value: "cotton", label: "🌿 Cotton" },
+    { value: "tomato", label: "🍅 Tomato" },
+    { value: "potato", label: "🥔 Potato" },
+    { value: "other", label: "🌿 Other" },
+  ];
 
-  const removeFile = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
-  }
+  const handleFileSelect = (file: File) => {
+    if (file && file.type.startsWith("image/")) {
+      setSelectedFile(file);
+      setError(null);
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewUrl(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setError("Please select a valid image file");
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      handleFileSelect(files[0]);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setDragOver(false);
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      handleFileSelect(files[0]);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (selectedFiles.length === 0) {
-      alert('Please select at least one image to analyze')
-      return
+    e.preventDefault();
+
+    if (!selectedFile) {
+      setError("Please select an image file");
+      return;
     }
 
-    setIsAnalyzing(true)
-    setAnalysisProgress(0)
+    if (!cropType) {
+      setError("Please select a crop type");
+      return;
+    }
+
+    if (!user) {
+      setError("Please log in to perform analysis");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
 
     try {
-      // Simulate analysis progress
-      const progressInterval = setInterval(() => {
-        setAnalysisProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval)
-            return prev
-          }
-          return prev + Math.random() * 15
-        })
-      }, 500)
+      console.log("🚀 Starting analysis...", {
+        file: selectedFile.name,
+        cropType,
+        fileSize: selectedFile.size,
+      });
 
-      // Simulate API call for crop analysis
-      await new Promise(resolve => setTimeout(resolve, 3000))
-      
-      setAnalysisProgress(100)
-      clearInterval(progressInterval)
+      const formData = new FormData();
+      formData.append("image", selectedFile);
+      formData.append("crop_type", cropType);
 
-      // Mock analysis results
-      const mockResults = {
-        cropHealth: 'Healthy',
-        confidence: 94,
-        detectedDiseases: [],
-        recommendations: [
-          'Continue current irrigation schedule',
-          'Monitor for early blight symptoms',
-          'Consider nutrient supplementation'
-        ],
-        growthStageDetected: growthStage || 'Vegetative',
-        analysisDate: new Date().toISOString()
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        throw new Error("Authentication token not found");
       }
 
-      onAnalysisComplete(mockResults)
-      
-      // Reset form
-      setSelectedFiles([])
-      setCropType('')
-      setGrowthStage('')
-      
-    } catch (error) {
-      console.error('Analysis failed:', error)
-      alert('Analysis failed. Please try again.')
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/crop-analysis/analyze/`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      console.log("📡 Response status:", response.status);
+
+      const result = await response.json();
+      console.log("📊 Analysis result:", result);
+
+      if (response.ok && result.success) {
+        onAnalysisComplete(result);
+        // Reset form
+        setSelectedFile(null);
+        setPreviewUrl(null);
+        setCropType("");
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+      } else {
+        const errorMessage =
+          result.message ||
+          result.error ||
+          `Analysis failed (${response.status})`;
+        setError(errorMessage);
+        onAnalysisComplete({ success: false, message: errorMessage });
+      }
+    } catch (err) {
+      console.error("❌ Analysis error:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "Network error occurred";
+      setError(errorMessage);
+      onAnalysisComplete({ success: false, message: errorMessage });
     } finally {
-      setIsAnalyzing(false)
-      setAnalysisProgress(0)
+      setLoading(false);
     }
-  }
+  };
+
+  const clearSelection = () => {
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Crop Information */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label htmlFor="cropType" className="block text-sm font-medium text-gray-700 mb-2">
-            Crop Type
-          </label>
-          <select
-            id="cropType"
-            value={cropType}
-            onChange={(e) => setCropType(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            required
-          >
-            <option value="">Select crop type</option>
-            <option value="wheat">Wheat</option>
-            <option value="corn">Corn</option>
-            <option value="rice">Rice</option>
-            <option value="soybean">Soybean</option>
-            <option value="tomato">Tomato</option>
-            <option value="potato">Potato</option>
-            <option value="cotton">Cotton</option>
-            <option value="barley">Barley</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="growthStage" className="block text-sm font-medium text-gray-700 mb-2">
-            Growth Stage
-          </label>
-          <select
-            id="growthStage"
-            value={growthStage}
-            onChange={(e) => setGrowthStage(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-          >
-            <option value="">Select growth stage</option>
-            <option value="germination">Germination</option>
-            <option value="seedling">Seedling</option>
-            <option value="vegetative">Vegetative</option>
-            <option value="flowering">Flowering</option>
-            <option value="fruiting">Fruiting/Grain Filling</option>
-            <option value="maturity">Maturity</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Image Upload */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Crop Images
+      {/* File Upload Area */}
+      <div className="space-y-4">
+        <label className="block text-sm font-medium text-gray-700">
+          Upload Crop Image
         </label>
-        <div
-          {...getRootProps()}
-          className={`
-            border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
-            ${isDragActive 
-              ? 'border-primary-500 bg-primary-50' 
-              : 'border-gray-300 hover:border-gray-400'
-            }
-          `}
-        >
-          <input {...getInputProps()} />
-          <CloudArrowUpIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          {isDragActive ? (
-            <p className="text-primary-600 font-medium">Drop the images here...</p>
-          ) : (
-            <div>
-              <p className="text-gray-600 mb-2">
-                <span className="font-medium text-primary-600">Click to upload</span> or drag and drop
-              </p>
-              <p className="text-sm text-gray-500">PNG, JPG, JPEG, WebP up to 10MB each</p>
-            </div>
-          )}
-        </div>
-      </div>
 
-      {/* Selected Files */}
-      {selectedFiles.length > 0 && (
-        <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">Selected Images</h4>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {selectedFiles.map((file, index) => (
-              <div key={index} className="relative group">
-                <div className="aspect-square rounded-lg border border-gray-200 overflow-hidden">
-                  <img
-                    src={URL.createObjectURL(file)}
-                    alt={`Upload ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+        <div
+          className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+            dragOver
+              ? "border-blue-400 bg-blue-50"
+              : selectedFile
+                ? "border-green-300 bg-green-50"
+                : "border-gray-300 hover:border-gray-400"
+          }`}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+        >
+          {previewUrl ? (
+            <div className="space-y-4">
+              <div className="relative inline-block">
+                <img
+                  src={previewUrl}
+                  alt="Preview"
+                  className="max-w-xs max-h-48 rounded-lg shadow-md mx-auto"
+                />
                 <button
                   type="button"
-                  onClick={() => removeFile(index)}
-                  className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={clearSelection}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
                 >
-                  <XMarkIcon className="h-4 w-4" />
+                  ×
                 </button>
-                <p className="mt-1 text-xs text-gray-500 truncate">{file.name}</p>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+              <div>
+                <p className="text-sm font-medium text-gray-900">
+                  {selectedFile?.name}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {selectedFile
+                    ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`
+                    : ""}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <CloudArrowUpIcon className="mx-auto h-12 w-12 text-gray-400" />
+              <div>
+                <p className="text-gray-600">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="font-medium text-blue-600 hover:text-blue-500"
+                  >
+                    Click to upload
+                  </button>{" "}
+                  or drag and drop
+                </p>
+                <p className="text-xs text-gray-500">
+                  PNG, JPG, GIF up to 10MB
+                </p>
+              </div>
+            </div>
+          )}
 
-      {/* Analysis Progress */}
-      {isAnalyzing && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-blue-700">Analyzing images...</span>
-            <span className="text-sm font-medium text-blue-700">{Math.round(analysisProgress)}%</span>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileInputChange}
+            className="hidden"
+          />
+        </div>
+      </div>
+
+      {/* Crop Type Selection */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700">
+          Crop Type
+        </label>
+        <select
+          value={cropType}
+          onChange={(e) => setCropType(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+          required
+        >
+          <option value="">Select crop type...</option>
+          {cropTypes.map((crop) => (
+            <option key={crop.value} value={crop.value}>
+              {crop.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
+          <ExclamationTriangleIcon className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-red-800">Analysis Error</p>
+            <p className="text-sm text-red-600 mt-1">{error}</p>
           </div>
-          <div className="w-full bg-blue-200 rounded-full h-2">
-            <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${analysisProgress}%` }}
-            />
-          </div>
-          <p className="text-xs text-blue-600 mt-2">
-            AI is analyzing your crop images for health assessment and recommendations...
-          </p>
         </div>
       )}
 
@@ -221,28 +298,39 @@ export function CropAnalysisForm({ onAnalysisComplete }: CropAnalysisFormProps) 
       <div className="flex justify-end">
         <button
           type="submit"
-          disabled={isAnalyzing || selectedFiles.length === 0}
-          className={`
-            px-6 py-3 rounded-lg font-medium text-white transition-colors
-            ${isAnalyzing || selectedFiles.length === 0
-              ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2'
-            }
-          `}
+          disabled={loading || !selectedFile || !cropType}
+          className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+            loading || !selectedFile || !cropType
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+          }`}
         >
-          {isAnalyzing ? (
-            <div className="flex items-center">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              Analyzing...
+          {loading ? (
+            <div className="flex items-center space-x-2">
+              <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+              <span>Analyzing...</span>
             </div>
           ) : (
-            <div className="flex items-center">
-              <PhotoIcon className="h-5 w-5 mr-2" />
-              Start Analysis
+            <div className="flex items-center space-x-2">
+              <PhotoIcon className="h-5 w-5" />
+              <span>Analyze Crop</span>
             </div>
           )}
         </button>
       </div>
+
+      {/* Info Box */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h4 className="text-sm font-medium text-blue-900 mb-2">
+          💡 Analysis Tips
+        </h4>
+        <ul className="text-sm text-blue-800 space-y-1">
+          <li>• Use clear, well-lit images for better analysis accuracy</li>
+          <li>• Include close-up shots of leaves and stems when possible</li>
+          <li>• Avoid blurry or heavily shadowed images</li>
+          <li>• Multiple angles provide more comprehensive analysis</li>
+        </ul>
+      </div>
     </form>
-  )
+  );
 }

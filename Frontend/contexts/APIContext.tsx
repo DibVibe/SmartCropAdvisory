@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext } from "react";
-import api from "@/lib/api";
+import api from "@/lib/api/api";
 
 // Types
 export interface WeatherData {
@@ -101,7 +101,8 @@ export interface SystemHealth {
 // Service Classes
 class WeatherService {
   async getCurrentWeather(lat: number, lon: number): Promise<WeatherData> {
-    const response = await api.get(`/weather/current/?lat=${lat}&lon=${lon}`);
+    // Backend router mounts WeatherAPIViewSet at /api/v1/weather/api/current/
+    const response = await api.get(`/weather/api/current/?lat=${lat}&lon=${lon}`);
     return response.data;
   }
 
@@ -400,7 +401,10 @@ class SystemService {
   }
 
   async getSystemStatus(): Promise<any> {
-    const response = await api.get("/status/");
+    // System status is outside v1: /api/status/
+    const base = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+    const root = base.replace("/api/v1", "");
+    const response = await axios.get(`${root}/api/status/`);
     return response.data;
   }
 

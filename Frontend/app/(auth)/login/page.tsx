@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -9,9 +9,17 @@ import { LoginRequest } from "../../../types/auth";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 
 export default function LoginPage() {
-  const { login, isAuthenticated, loading: authLoading } = useAuth();
+  const {
+    login,
+    isAuthenticated,
+    loading: authLoading,
+    user,
+    token,
+    initialized,
+  } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const redirectTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Form state
   const [formData, setFormData] = useState<LoginRequest>({
@@ -25,17 +33,82 @@ export default function LoginPage() {
   const [validationErrors, setValidationErrors] = useState<
     Partial<LoginRequest>
   >({});
+  const [redirecting, setRedirecting] = useState(false);
 
   // Registration success message
   const message = searchParams.get("message");
 
-  // Redirect if already authenticated
+  // Debug logging for auth state changes
   useEffect(() => {
-    if (isAuthenticated && !authLoading) {
-      const redirectTo = searchParams.get("redirect") || "/dashboard";
-      router.push(redirectTo);
+    console.log("🔍 Auth State Debug:", {
+      isAuthenticated,
+      authLoading,
+      initialized,
+      hasUser: !!user,
+      hasToken: !!token,
+      loadingState,
+      redirecting,
+    });
+  }, [
+    isAuthenticated,
+    authLoading,
+    initialized,
+    user,
+    token,
+    loadingState,
+    redirecting,
+  ]);
+
+  // FIXED: Handle redirect when already authenticated
+  useEffect(() => {
+    // Clear any existing timeout
+    if (redirectTimeoutRef.current) {
+      clearTimeout(redirectTimeoutRef.current);
     }
-  }, [isAuthenticated, authLoading, router, searchParams]);
+
+    // Only redirect if:
+    // 1. Auth is fully initialized
+    // 2. User is authenticated
+    // 3. Not currently processing a login
+    // 4. Not already redirecting
+    if (
+      initialized &&
+      isAuthenticated &&
+      loadingState === "idle" &&
+      !redirecting
+    ) {
+      console.log("👤 User already authenticated, initiating redirect...");
+      console.log("📊 Auth details:", {
+        user: user?.username,
+        tokenLength: token?.length,
+      });
+
+      setRedirecting(true);
+      const redirectTo = searchParams.get("redirect") || "/dashboard";
+
+      // Use timeout to ensure state is stable
+      redirectTimeoutRef.current = setTimeout(() => {
+        console.log("🔄 Executing redirect to:", redirectTo);
+        router.push(redirectTo);
+      }, 500);
+    }
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (redirectTimeoutRef.current) {
+        clearTimeout(redirectTimeoutRef.current);
+      }
+    };
+  }, [
+    initialized,
+    isAuthenticated,
+    loadingState,
+    redirecting,
+    user,
+    token,
+    router,
+    searchParams,
+  ]);
 
   // Handle input changes
   const handleInputChange = (field: keyof LoginRequest, value: string) => {
@@ -72,7 +145,7 @@ export default function LoginPage() {
     return Object.keys(errors).length === 0;
   };
 
-  // Handle form submission
+  // FIXED: Enhanced form submission with better debugging
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -84,20 +157,58 @@ export default function LoginPage() {
     setError(null);
 
     try {
+      console.log("🔐 Starting login process...");
+      console.log("📝 Form data:", {
+        username: formData.username,
+        passwordLength: formData.password.length,
+      });
+
       const result = await login(formData.username, formData.password);
+      console.log("📥 Login result:", result);
 
       if (result.success) {
+        console.log("✅ Login successful!");
         setLoadingState("success");
+
         // Store remember me preference
         if (rememberMe) {
           localStorage.setItem("rememberMe", "true");
         }
-        // Redirect will happen via useEffect when isAuthenticated becomes true
+
+        // Debug storage state
+        setTimeout(() => {
+          const storedToken = localStorage.getItem("authToken");
+          const storedUser = localStorage.getItem("userData");
+          console.log("🔍 Post-login storage check:", {
+            tokenStored: !!storedToken,
+            userStored: !!storedUser,
+            tokenPreview: storedToken
+              ? storedToken.substring(0, 20) + "..."
+              : "none",
+          });
+        }, 200);
+
+        // Handle redirect after successful login
+        const redirectTo = searchParams.get("redirect") || "/dashboard";
+        console.log("📍 Preparing redirect to:", redirectTo);
+
+        // Wait for auth context to update
+        setTimeout(() => {
+          console.log("🔄 Initiating post-login redirect...");
+          setRedirecting(true);
+
+          setTimeout(() => {
+            console.log("🚀 Executing redirect to:", redirectTo);
+            router.push(redirectTo);
+          }, 300);
+        }, 800); // Increased delay to ensure auth state is fully updated
       } else {
+        console.log("❌ Login failed:", result.error);
         setLoadingState("error");
         setError(result.error || "Login failed. Please try again.");
       }
     } catch (err) {
+      console.error("❌ Login exception:", err);
       setLoadingState("error");
       setError(
         err instanceof Error ? err.message : "An unexpected error occurred"
@@ -105,30 +216,75 @@ export default function LoginPage() {
     }
   };
 
-  // Handle demo login
+  // Enhanced demo login with debugging
   const handleDemoLogin = async () => {
     setLoadingState("loading");
     setError(null);
 
     try {
+      console.log("🧪 Attempting demo login...");
       const result = await login("demo_farmer", "demo123");
-      if (!result.success) {
+
+      if (result.success) {
+        console.log("✅ Demo login successful");
+        setLoadingState("success");
+        setRedirecting(true);
+
+        setTimeout(() => {
+          console.log("🚀 Demo redirect to dashboard");
+          router.push("/dashboard");
+        }, 800);
+      } else {
+        console.log("❌ Demo login failed:", result.error);
         setLoadingState("error");
         setError("Demo account not available. Please use your credentials.");
       }
     } catch (err) {
+      console.error("❌ Demo login error:", err);
       setLoadingState("error");
       setError("Demo login failed");
     }
   };
 
-  // Show loading screen while checking auth
-  if (authLoading) {
+  // Show loading screen while auth is initializing or redirecting
+  if (!initialized || authLoading || redirecting) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Checking authentication...</p>
+          <p className="text-gray-600">
+            {!initialized
+              ? "Initializing..."
+              : authLoading
+                ? "Checking authentication..."
+                : "Redirecting to dashboard..."}
+          </p>
+          <p className="text-xs text-gray-400 mt-2">
+            Debug:{" "}
+            {JSON.stringify({
+              initialized,
+              authLoading,
+              redirecting,
+              isAuthenticated,
+            })}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render login form if user is authenticated
+  if (isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">
+            Welcome back, {user?.first_name || user?.username}!
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            Redirecting to your dashboard...
+          </p>
         </div>
       </div>
     );
@@ -148,6 +304,14 @@ export default function LoginPage() {
           <p className="mt-2 text-sm text-gray-600">
             Sign in to your agricultural intelligence dashboard
           </p>
+
+          {/* Debug Info (only in development) */}
+          {process.env.NODE_ENV === "development" && (
+            <div className="mt-2 text-xs text-gray-400 bg-gray-100 rounded p-2">
+              Debug: Auth={isAuthenticated ? "Y" : "N"}, Init=
+              {initialized ? "Y" : "N"}, Loading={authLoading ? "Y" : "N"}
+            </div>
+          )}
         </div>
 
         {/* Registration Success Message */}

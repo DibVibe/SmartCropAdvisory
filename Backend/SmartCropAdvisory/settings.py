@@ -8,12 +8,14 @@ Django settings for SmartCropAdvisory project.
 
 # Suppress specific warnings from dependencies
 import warnings
+import logging
+import sys
 
 warnings.filterwarnings("ignore", category=UserWarning, module="pkg_resources")
 warnings.filterwarnings(
     "ignore", category=UserWarning, module="rest_framework_simplejwt"
 )
-# Note: Removed the AttributeError filterwarnings as it's not a Warning subclass
+logger = logging.getLogger(__name__)
 
 # Standard library imports
 import sys, os, json
@@ -397,10 +399,53 @@ MAX_IMAGE_SIZE = config("MAX_IMAGE_SIZE", default=10 * 1024 * 1024, cast=int)  #
 # 🔥 REDIS & CACHING CONFIGURATION
 # ==========================================
 
+# ==========================================
+# 🔥 REDIS & CACHING CONFIGURATION
+# ==========================================
+
 REDIS_URL = config("REDIS_URL", default="redis://localhost:6379/0")
 
+# Redis connection settings for different use cases
+REDIS_DATABASES = {
+    "default": 0,
+    "cache": 0,
+    "sessions": 1,
+    "tokens": 2,
+    "celery": 3,
+    "rate_limit": 4,
+}
+
+# Parse Redis URL for token manager
+REDIS_HOST = config("REDIS_HOST", default="localhost")
+REDIS_PORT = config("REDIS_PORT", default=6379, cast=int)
+REDIS_DB = config("REDIS_DB", default=REDIS_DATABASES["default"], cast=int)
+REDIS_PASSWORD = config("REDIS_PASSWORD", default=None)
+
+# Token-specific Redis settings
+REDIS_TOKEN_DB = config("REDIS_TOKEN_DB", default=REDIS_DATABASES["tokens"], cast=int)
+REDIS_TOKEN_PREFIX = config("REDIS_TOKEN_PREFIX", default="auth_token")
+REDIS_TOKEN_EXPIRY = config("REDIS_TOKEN_EXPIRY", default=604800, cast=int)  # 7 days
+
 # Cache configuration with Redis or fallback to local memory
-if "redis" in REDIS_URL.lower():
+try:
+    import redis
+
+    # Test Redis connection
+    redis_client = redis.Redis(
+        host=REDIS_HOST,
+        port=REDIS_PORT,
+        db=REDIS_DB,
+        password=REDIS_PASSWORD,
+        decode_responses=True,
+        socket_connect_timeout=5,
+        socket_timeout=5,
+        retry_on_timeout=True,
+    )
+    redis_client.ping()  # Test connection
+    REDIS_AVAILABLE = True
+
+    print(f"✅ Redis connected successfully at {REDIS_HOST}:{REDIS_PORT}")
+
     CACHES = {
         "default": {
             "BACKEND": "django_redis.cache.RedisCache",
@@ -412,46 +457,174 @@ if "redis" in REDIS_URL.lower():
                         "REDIS_MAX_CONNECTIONS", default=100, cast=int
                     ),
                     "retry_on_timeout": True,
+                    "retry_on_error": [redis.ConnectionError, redis.TimeoutError],
                     "health_check_interval": 30,
                     "socket_keepalive": True,
-                    "socket_keepalive_options": {},
+                    "socket_keepalive_options": {
+                        1: 1,  # TCP_KEEPIDLE
+                        2: 3,  # TCP_KEEPINTVL
+                        3: 5,  # TCP_KEEPCNT
+                    },
+                    "socket_connect_timeout": 5,
+                    "socket_timeout": 5,
                 },
                 "SERIALIZER": "django_redis.serializers.pickle.PickleSerializer",
                 "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
                 "IGNORE_EXCEPTIONS": True,
+                "LOG_IGNORED_EXCEPTIONS": True,
             },
             "KEY_PREFIX": config("CACHE_KEY_PREFIX", default="smartcrop"),
             "TIMEOUT": config("CACHE_TIMEOUT", default=3600, cast=int),
             "VERSION": config("CACHE_VERSION", default=1, cast=int),
-        }
+        },
+        # Separate cache for tokens
+        "tokens": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_TOKEN_DB}",
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                "CONNECTION_POOL_KWARGS": {
+                    "max_connections": config(
+                        "REDIS_TOKEN_MAX_CONNECTIONS", default=50, cast=int
+                    ),
+                    "retry_on_timeout": True,
+                    "health_check_interval": 30,
+                    "socket_keepalive": True,
+                    "socket_connect_timeout": 5,
+                    "socket_timeout": 5,
+                },
+                "SERIALIZER": "django_redis.serializers.pickle.PickleSerializer",
+                "IGNORE_EXCEPTIONS": False,  # Don't ignore exceptions for tokens
+            },
+            "KEY_PREFIX": REDIS_TOKEN_PREFIX,
+            "TIMEOUT": REDIS_TOKEN_EXPIRY,
+        },
+        # Fast cache for rate limiting
+        "rate_limit": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DATABASES['rate_limit']}",
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                "CONNECTION_POOL_KWARGS": {
+                    "max_connections": 20,
+                    "retry_on_timeout": True,
+                },
+                "IGNORE_EXCEPTIONS": True,
+            },
+            "KEY_PREFIX": "rate_limit",
+            "TIMEOUT": 3600,  # 1 hour default
+        },
     }
-    pass  # Redis cache configured
-else:
-    # Fallback to local memory cache
+
+    # Session configuration with Redis
+    SESSION_ENGINE = config(
+        "SESSION_ENGINE", default="django.contrib.sessions.backends.cache"
+    )
+    SESSION_CACHE_ALIAS = "default"
+    SESSION_COOKIE_AGE = config(
+        "SESSION_COOKIE_AGE", default=86400, cast=int
+    )  # 24 hours
+    SESSION_SAVE_EVERY_REQUEST = config(
+        "SESSION_SAVE_EVERY_REQUEST", default=False, cast=bool
+    )
+    SESSION_EXPIRE_AT_BROWSER_CLOSE = config(
+        "SESSION_EXPIRE_AT_BROWSER_CLOSE", default=False, cast=bool
+    )
+
+except (redis.ConnectionError, redis.TimeoutError, ImportError) as e:
+    # Fallback to local memory cache if Redis is not available
+    REDIS_AVAILABLE = False
+    print(f"⚠️ Redis not available, falling back to local memory cache: {e}")
+
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-            "LOCATION": "smartcrop-cache",
+            "LOCATION": "smartcrop-cache-default",
             "TIMEOUT": config("CACHE_TIMEOUT", default=3600, cast=int),
             "OPTIONS": {
                 "MAX_ENTRIES": 10000,
                 "CULL_FREQUENCY": 3,
             },
-        }
+        },
+        "tokens": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "smartcrop-cache-tokens",
+            "TIMEOUT": REDIS_TOKEN_EXPIRY,
+            "OPTIONS": {
+                "MAX_ENTRIES": 5000,
+                "CULL_FREQUENCY": 4,
+            },
+        },
+        "rate_limit": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "smartcrop-cache-ratelimit",
+            "TIMEOUT": 3600,
+            "OPTIONS": {
+                "MAX_ENTRIES": 1000,
+                "CULL_FREQUENCY": 5,
+            },
+        },
     }
-    pass  # Local memory cache configured
+
+    # Use database sessions as fallback
+    SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
 # Cache TTL settings for different data types
 CACHE_TTL = {
+    # Authentication & User Data
+    "auth_tokens": config("CACHE_TTL_AUTH_TOKENS", default=604800, cast=int),  # 7 days
+    "user_sessions": config("CACHE_TTL_SESSIONS", default=3600, cast=int),  # 1 hour
+    "user_profiles": config(
+        "CACHE_TTL_USER_PROFILES", default=1800, cast=int
+    ),  # 30 minutes
+    "otp_codes": config("CACHE_TTL_OTP", default=300, cast=int),  # 5 minutes
+    # Application Data
     "weather_data": config("CACHE_TTL_WEATHER", default=1800, cast=int),  # 30 minutes
     "soil_data": config("CACHE_TTL_SOIL", default=86400, cast=int),  # 24 hours
     "crop_data": config("CACHE_TTL_CROP", default=3600, cast=int),  # 1 hour
     "market_data": config("CACHE_TTL_MARKET", default=900, cast=int),  # 15 minutes
     "model_predictions": config("CACHE_TTL_ML", default=300, cast=int),  # 5 minutes
     "satellite_data": config("CACHE_TTL_SATELLITE", default=7200, cast=int),  # 2 hours
-    "user_sessions": config("CACHE_TTL_SESSIONS", default=3600, cast=int),  # 1 hour
     "api_responses": config("CACHE_TTL_API", default=600, cast=int),  # 10 minutes
+    # Rate Limiting
+    "rate_limit_api": config("CACHE_TTL_RATE_LIMIT", default=3600, cast=int),  # 1 hour
+    "rate_limit_login": config(
+        "CACHE_TTL_LOGIN_ATTEMPTS", default=900, cast=int
+    ),  # 15 minutes
 }
+
+# Redis Cluster Configuration (for production scaling)
+REDIS_CLUSTER_ENABLED = config("REDIS_CLUSTER_ENABLED", default=False, cast=bool)
+if REDIS_CLUSTER_ENABLED:
+    REDIS_CLUSTER_NODES = config(
+        "REDIS_CLUSTER_NODES", default="localhost:7000,localhost:7001,localhost:7002"
+    ).split(",")
+
+# Redis Monitoring and Health Check Settings
+REDIS_HEALTH_CHECK_INTERVAL = config(
+    "REDIS_HEALTH_CHECK_INTERVAL", default=30, cast=int
+)
+REDIS_MAX_RETRIES = config("REDIS_MAX_RETRIES", default=3, cast=int)
+REDIS_RETRY_DELAY = config("REDIS_RETRY_DELAY", default=1, cast=float)
+
+# Redis Performance Settings
+REDIS_SOCKET_KEEPALIVE = config("REDIS_SOCKET_KEEPALIVE", default=True, cast=bool)
+REDIS_SOCKET_KEEPALIVE_OPTIONS = {
+    1: config("REDIS_TCP_KEEPIDLE", default=1, cast=int),
+    2: config("REDIS_TCP_KEEPINTVL", default=3, cast=int),
+    3: config("REDIS_TCP_KEEPCNT", default=5, cast=int),
+}
+
+# Redis connection status (for use in other parts of the app)
+REDIS_STATUS = {
+    "available": REDIS_AVAILABLE,
+    "host": REDIS_HOST,
+    "port": REDIS_PORT,
+    "databases": REDIS_DATABASES,
+}
+
+print(f"🔧 Cache configuration: {'Redis' if REDIS_AVAILABLE else 'Local Memory'}")
+
 
 # ==========================================
 # 🚀 REST FRAMEWORK CONFIGURATION

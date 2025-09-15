@@ -49,6 +49,11 @@ urlpatterns = [
         name="active-alerts",
     ),
     path(
+        "alerts/recent/",
+        views.AdvisoryAlertViewSet.as_view({"get": "recent"}),
+        name="recent-alerts",
+    ),
+    path(
         "alerts/bulk-mark-read/",
         views.AdvisoryAlertViewSet.as_view({"post": "bulk_mark_read"}),
         name="bulk-mark-read",

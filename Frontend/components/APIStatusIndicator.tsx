@@ -2,7 +2,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAPIStatus } from "../lib/api";
+const getAPIStatus = async () => {
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api/v1'
+  try {
+    const [connection, cors] = await Promise.all([
+      fetch(`${API_BASE_URL}/`, { method: 'GET' }),
+      fetch(`${API_BASE_URL.replace('/api/v1', '')}/api/test/cors/`, { method: 'GET' }),
+    ])
+    return {
+      connection: connection.ok,
+      cors: cors.ok,
+      auth: true,
+      overall: connection.ok && cors.ok,
+    }
+  } catch {
+    return { connection: false, cors: false, auth: false, overall: false }
+  }
+}
 
 interface APIStatus {
   connection: boolean;

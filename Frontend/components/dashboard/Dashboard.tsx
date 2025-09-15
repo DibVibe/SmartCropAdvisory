@@ -2,7 +2,9 @@
 
 import { ReactNode, useEffect, useState, useCallback } from "react";
 import { useAuth } from "../../contexts/AuthContext";
+import { useRouter } from "next/navigation";
 import { useAPI } from "../../contexts/APIContext";
+import api from "@/lib/api/api";
 import { DashboardData, WeatherData, CropData, Alert } from "../../types/api";
 import { formatDateTime } from "../../utils/dateUtils";
 
@@ -24,7 +26,13 @@ interface DashboardProps {
 }
 
 export function Dashboard({ children }: DashboardProps) {
-  const { user, loading: authLoading } = useAuth();
+  const {
+    user,
+    loading: authLoading,
+    isAuthenticated,
+    getAuthHeaders,
+  } = useAuth();
+  const router = useRouter();
   const {
     cropService,
     weatherService,
@@ -44,12 +52,22 @@ export function Dashboard({ children }: DashboardProps) {
 
   // Debug logging
   useEffect(() => {
-    console.log("🔐 Auth State:", {
+    console.log("🔐 Dashboard Auth State:", {
       user: user?.username,
       authLoading,
+      isAuthenticated,
       hasUser: !!user,
     });
-  }, [user, authLoading]);
+  }, [user, authLoading, isAuthenticated]);
+
+  // FIXED: Handle authentication redirect properly
+  useEffect(() => {
+    // Only redirect if auth is done loading and user is not authenticated
+    if (!authLoading && !isAuthenticated) {
+      console.log("🚨 Not authenticated, redirecting to login");
+      router.push("/login");
+    }
+  }, [authLoading, isAuthenticated, router]);
 
   // Get user's current location
   const getUserLocation = useCallback((): Promise<{
@@ -71,10 +89,9 @@ export function Dashboard({ children }: DashboardProps) {
           },
           (error) => {
             console.warn("⚠️ Geolocation failed:", error.message);
-            // Default to New Delhi, India
             resolve({ lat: 28.6139, lon: 77.209 });
           },
-          { timeout: 10000, maximumAge: 300000 } // 10s timeout, 5min cache
+          { timeout: 10000, maximumAge: 300000 }
         );
       } else {
         console.log("📍 Geolocation not supported, using default location");
@@ -83,11 +100,11 @@ export function Dashboard({ children }: DashboardProps) {
     });
   }, []);
 
-  // Fetch dashboard data
+  // FIXED: Fetch dashboard data with proper auth headers
   const fetchDashboardData = useCallback(
     async (showLoader = true) => {
-      if (!user) {
-        console.log("❌ No user available for data fetch");
+      if (!user || !isAuthenticated) {
+        console.log("❌ No authenticated user available for data fetch");
         return;
       }
 
@@ -105,97 +122,109 @@ export function Dashboard({ children }: DashboardProps) {
         // Get user location for weather data
         const location = await getUserLocation();
 
-        // Updated API calls to match your Django URLs
+        // FIXED: Use consistent auth headers from AuthContext
+        // Updated API calls with axios client (auto-includes auth token)
         const apiCalls = await Promise.allSettled([
-          // Weather data
-          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/weather/data/`, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-            },
-          })
-            .then((res) => (res.ok ? res.json() : null))
+          api
+            .get(`/weather/api/current/`, {
+              params: { lat: location.lat, lon: location.lon },
+            })
+            .then((res) => res.data)
             .catch((err) => {
               console.log("❌ Weather service failed:", err);
               return null;
             }),
 
-          // User's crops
-          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/crop/crops/`, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-            },
-          })
-            .then((res) => (res.ok ? res.json() : []))
+          api
+            .get(`/crop/crops/`)
+            .then((res) => res.data)
             .catch((err) => {
               console.log("❌ Crop service failed:", err);
               return [];
             }),
 
-          // Advisory alerts
-          fetch(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/advisory/alerts/active/`,
-            {
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-              },
-            }
-          )
-            .then((res) => (res.ok ? res.json() : []))
+          api
+            .get(`/advisory/alerts/active/`)
+            .then((res) => res.data)
             .catch((err) => {
               console.log("❌ Advisory service failed:", err);
               return [];
             }),
 
-          // Market prices
-          fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/market/prices/`, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-            },
-          })
-            .then((res) => (res.ok ? res.json() : null))
+          api
+            .get(`/market/prices/`)
+            .then((res) => res.data)
             .catch((err) => {
               console.log("❌ Market service failed:", err);
               return null;
             }),
 
-          // Irrigation schedules
-          fetch(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/irrigation/schedules/`,
-            {
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-              },
-            }
-          )
-            .then((res) => (res.ok ? res.json() : []))
+          api
+            .get(`/irrigation/schedules/`)
+            .then((res) => res.data)
             .catch((err) => {
               console.log("❌ Irrigation service failed:", err);
               return [];
             }),
         ]);
 
-        // Rest of your existing code...
+        console.log(
+          "📊 API Results:",
+          apiCalls.map((result) => result.status)
+        );
+
+        // Process the results
+        const [
+          weatherResult,
+          cropsResult,
+          alertsResult,
+          marketResult,
+          irrigationResult,
+        ] = apiCalls;
+
+        const newDashboardData: DashboardData = {
+          weather:
+            weatherResult.status === "fulfilled" ? weatherResult.value : null,
+          crops: cropsResult.status === "fulfilled" ? cropsResult.value : [],
+          alerts: alertsResult.status === "fulfilled" ? alertsResult.value : [],
+          market:
+            marketResult.status === "fulfilled" ? marketResult.value : null,
+          irrigation:
+            irrigationResult.status === "fulfilled"
+              ? irrigationResult.value
+              : [],
+          lastUpdated: new Date(),
+        };
+
+        setDashboardData(newDashboardData);
+        setLastUpdated(new Date());
+        console.log("✅ Dashboard data loaded successfully");
       } catch (err) {
-        // Error handling...
+        console.error("❌ Dashboard data fetch failed:", err);
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to load dashboard data";
+        setError(errorMessage);
       } finally {
         setLoading(false);
         setRefreshing(false);
       }
     },
-    [user, getUserLocation]
+    [user, isAuthenticated, getUserLocation, getAuthHeaders]
   );
 
   // Initial data fetch when user is available
   useEffect(() => {
-    if (user && !authLoading) {
-      console.log("👤 User available, fetching dashboard data...");
+    if (user && isAuthenticated && !authLoading) {
+      console.log(
+        "👤 Authenticated user available, fetching dashboard data..."
+      );
       fetchDashboardData();
     }
-  }, [user, authLoading, fetchDashboardData]);
+  }, [user, isAuthenticated, authLoading, fetchDashboardData]);
 
   // Auto-refresh every 5 minutes when user is authenticated
   useEffect(() => {
-    if (!user) return;
+    if (!user || !isAuthenticated) return;
 
     const refreshInterval = setInterval(
       () => {
@@ -203,13 +232,13 @@ export function Dashboard({ children }: DashboardProps) {
         fetchDashboardData(false);
       },
       5 * 60 * 1000
-    ); // 5 minutes
+    );
 
     return () => {
       console.log("🛑 Clearing auto-refresh interval");
       clearInterval(refreshInterval);
     };
-  }, [user, fetchDashboardData]);
+  }, [user, isAuthenticated, fetchDashboardData]);
 
   // Manual refresh handler
   const handleRefresh = useCallback(async () => {
@@ -217,7 +246,7 @@ export function Dashboard({ children }: DashboardProps) {
     await fetchDashboardData(false);
   }, [fetchDashboardData]);
 
-  // Show loading spinner while auth is being checked
+  // FIXED: Show loading spinner while auth is being checked
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -229,33 +258,13 @@ export function Dashboard({ children }: DashboardProps) {
     );
   }
 
-  // Show login prompt if user is not authenticated
-  if (!user) {
+  // FIXED: Don't show login UI, just redirect (handled by useEffect above)
+  if (!isAuthenticated || !user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-6xl mb-4">🌾</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Welcome to SmartCropAdvisory
-          </h2>
-          <p className="text-gray-600 mb-6">
-            Please sign in to access your agricultural dashboard with
-            personalized insights and recommendations.
-          </p>
-          <div className="space-y-3">
-            <button
-              onClick={() => (window.location.href = "/login")}
-              className="w-full bg-primary-600 text-white py-2 px-4 rounded-lg hover:bg-primary-700 transition-colors"
-            >
-              Sign In to Dashboard
-            </button>
-            <button
-              onClick={() => (window.location.href = "/register")}
-              className="w-full border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Create New Account
-            </button>
-          </div>
+        <div className="text-center">
+          <LoadingSpinner size="lg" />
+          <p className="mt-4 text-gray-600">Redirecting to login...</p>
         </div>
       </div>
     );
@@ -271,7 +280,7 @@ export function Dashboard({ children }: DashboardProps) {
             Loading your agricultural dashboard...
           </p>
           <p className="mt-2 text-sm text-gray-500">
-            Fetching weather, crops, and alerts data
+            Welcome back, {user.first_name || user.username}!
           </p>
         </div>
       </div>

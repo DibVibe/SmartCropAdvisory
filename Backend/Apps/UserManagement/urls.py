@@ -1,5 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from django.http import JsonResponse
 from .views import (
     UserRegistrationView,
     LoginView,
@@ -16,6 +17,14 @@ from .views import (
     MongoUserProfileView,
 )
 
+
+def user_health_check(request):
+    """User service health check"""
+    return JsonResponse(
+        {"service": "users", "status": "healthy", "endpoints_active": True}
+    )
+
+
 router = DefaultRouter()
 router.register(r"profiles", UserProfileViewSet, basename="profile")
 router.register(r"subscriptions", SubscriptionViewSet, basename="subscription")
@@ -27,6 +36,8 @@ router.register(r"api-keys", ApiKeyViewSet, basename="apikey")
 app_name = "users"
 
 urlpatterns = [
+    # Health check for user service
+    path("health/", user_health_check, name="user-health"),  # 🆕 NEW
     # Authentication endpoints
     path("register/", UserRegistrationView.as_view(), name="register"),
     path("login/", LoginView.as_view(), name="login"),
@@ -65,39 +76,6 @@ urlpatterns = [
     ),
     # MongoDB endpoint for user profile
     path("mongo-profile/", MongoUserProfileView.as_view(), name="mongo-profile"),
-    # Notification shortcuts
-    path(
-        "notifications/unread/",
-        NotificationViewSet.as_view({"get": "unread"}),
-        name="unread-notifications",
-    ),
-    path(
-        "notifications/mark-all-read/",
-        NotificationViewSet.as_view({"post": "mark_all_read"}),
-        name="mark-all-read",
-    ),
-    path(
-        "notifications/clear-old/",
-        NotificationViewSet.as_view({"delete": "clear_old"}),
-        name="clear-old-notifications",
-    ),
-    # Subscription shortcuts
-    path(
-        "subscription/current/",
-        SubscriptionViewSet.as_view({"get": "current"}),
-        name="current-subscription",
-    ),
-    path(
-        "subscription/upgrade/",
-        SubscriptionViewSet.as_view({"post": "upgrade"}),
-        name="upgrade-subscription",
-    ),
-    # Activity logs shortcuts
-    path(
-        "activities/summary/",
-        ActivityLogViewSet.as_view({"get": "summary"}),
-        name="activity-summary",
-    ),
     # Router URLs (includes all CRUD operations for registered viewsets)
     path("", include(router.urls)),
 ]

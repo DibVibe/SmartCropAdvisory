@@ -329,6 +329,64 @@ class MongoApiKeySerializer(serializers.Serializer):
     updated_at = serializers.DateTimeField(read_only=True)
 
 
+class MongoTokenSerializer(serializers.Serializer):
+    """Serializer for token response"""
+
+    token = serializers.CharField()
+    user = serializers.DictField()
+    profile = serializers.DictField(required=False)
+    expires_in = serializers.IntegerField()  # seconds
+    token_type = serializers.CharField(default="Bearer")
+
+
+class MongoProfileUpdateSerializer(serializers.Serializer):
+    """Serializer for updating MongoDB user profile"""
+
+    # User fields
+    first_name = serializers.CharField(required=False, allow_blank=True)
+    last_name = serializers.CharField(required=False, allow_blank=True)
+    email = serializers.EmailField(required=False)
+
+    # Profile fields
+    phone_number = serializers.CharField(required=False, allow_blank=True)
+    alternate_phone = serializers.CharField(required=False, allow_blank=True)
+    user_type = serializers.ChoiceField(
+        choices=MongoUserProfile.USER_TYPES, required=False
+    )
+    language = serializers.CharField(required=False)
+    bio = serializers.CharField(required=False, allow_blank=True)
+
+    # Address fields
+    address_line1 = serializers.CharField(required=False, allow_blank=True)
+    address_line2 = serializers.CharField(required=False, allow_blank=True)
+    village = serializers.CharField(required=False, allow_blank=True)
+    district = serializers.CharField(required=False, allow_blank=True)
+    state = serializers.CharField(required=False, allow_blank=True)
+    pincode = serializers.CharField(required=False, allow_blank=True)
+
+    # Farm fields
+    farm_size = serializers.FloatField(required=False)
+    farming_experience = serializers.IntegerField(required=False)
+    education_level = serializers.ChoiceField(
+        choices=MongoUserProfile.EDUCATION_LEVELS, required=False
+    )
+    primary_crops = serializers.ListField(child=serializers.CharField(), required=False)
+    farming_type = serializers.ChoiceField(
+        choices=[
+            ("organic", "Organic"),
+            ("conventional", "Conventional"),
+            ("mixed", "Mixed"),
+        ],
+        required=False,
+    )
+
+    def validate_phone_number(self, value):
+        """Validate phone number format"""
+        if value and not re.match(r"^\+?1?\d{9,15}$", value):
+            raise serializers.ValidationError("Invalid phone number format")
+        return value
+
+
 # ==========================================
 # 🗄️ LEGACY DJANGO SERIALIZERS (KEEP FOR COMPATIBILITY)
 # ==========================================

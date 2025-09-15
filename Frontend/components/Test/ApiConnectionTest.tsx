@@ -1,7 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { cropApi, weatherApi, marketApi, userApi, advisoryApi } from '@/Lib/Api'
+import api from '@/lib/api/api'
+const cropApi = { getCrops: async () => (await api.get('/crop/crops/')).data }
+const weatherApi = { getWeatherStations: async () => (await api.get('/weather/data/')).data }
+const marketApi = { getCurrentPrices: async () => (await api.get('/market/prices/')).data }
+const userApi = { getProfile: async () => (await api.get('/users/profiles/')).data }
+const advisoryApi = { getAlerts: async () => (await api.get('/advisory/alerts/active/')).data }
 
 interface ConnectionStatus {
   service: string

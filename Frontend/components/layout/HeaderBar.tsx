@@ -6,7 +6,24 @@ import { useState, useEffect } from "react";
 import { UserMenu } from "@/components/User/UserMenu";
 import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
 import { WeatherData, SystemHealth } from "@/types/api";
-import { User } from "@/types/auth";
+
+type User = {
+  id: string;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  profile?: {
+    farm_name?: string;
+    location?: string;
+    phone_number?: string;
+    farm_size?: number;
+    crops?: string[];
+  };
+  is_active: boolean;
+  date_joined: string;
+  last_login?: string;
+};
 
 export function HeaderBar() {
   const { user, logout } = useAuth();

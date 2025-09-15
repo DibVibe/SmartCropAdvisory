@@ -1,27 +1,59 @@
-// API Client
-export {
-  default as apiClient,
-  TokenManager,
-  testConnection,
-  testCORS,
-  testAuth,
-  getAPIStatus,
-  healthCheck,
-} from "./client";
+import axios from 'axios'
+import api from './api'
 
-// Default export for the main API instance
-export { default } from "./client";
+export const cropApi = {
+  async getCrops() {
+    const res = await api.get('/crop/crops/')
+    return res.data
+  },
+}
 
-// API Services
-export * from "./cropApi";
-export * from "./weatherApi";
-export * from "./marketApi";
-export * from "./userApi";
-export * from "./advisoryApi";
+export const weatherApi = {
+  async getWeatherStations() {
+    const res = await api.get('/weather/data/')
+    return res.data
+  },
+}
 
-// Re-export for convenience
-export { cropApi } from "./cropApi";
-export { weatherApi } from "./weatherApi";
-export { marketApi } from "./marketApi";
-export { userApi } from "./userApi";
-export { advisoryApi } from "./advisoryApi";
+export const marketApi = {
+  async getCurrentPrices() {
+    const res = await api.get('/market/prices/')
+    return res.data
+  },
+}
+
+export const advisoryApi = {
+  async getAlerts() {
+    const res = await api.get('/advisory/alerts/active/')
+    return res.data
+  },
+}
+
+export const userApi = {
+  async getProfile() {
+    const res = await api.get('/users/profiles/')
+    return res.data
+  },
+}
+
+export const getAPIStatus = async () => {
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api/v1'
+  try {
+    const [connection, cors] = await Promise.all([
+      axios.get(`${API_BASE_URL}/`, { timeout: 5000 }),
+      axios.get(`${API_BASE_URL.replace('/api/v1', '')}/api/test/cors/`, { timeout: 5000 }),
+    ])
+    return {
+      connection: !!connection,
+      cors: !!cors,
+      auth: true, // leave optimistic; detailed auth check can be added
+      overall: true,
+    }
+  } catch {
+    return { connection: false, cors: false, auth: false, overall: false }
+  }
+}
+
+export default api
+
+

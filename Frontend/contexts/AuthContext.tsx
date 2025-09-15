@@ -6,48 +6,41 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from "react";
 import { useRouter } from "next/navigation";
 
-// Types
+// ==========================================
+// 🔷 TYPE DEFINITIONS
+// ==========================================
+
+interface UserProfile {
+  farm_name?: string;
+  location?: string;
+  phone_number?: string;
+  farm_size?: number;
+  crops?: string[];
+  profile_picture?: string;
+  bio?: string;
+}
+
 interface User {
   id: string;
   username: string;
   email: string;
   first_name: string;
   last_name: string;
-  profile?: {
-    farm_name?: string;
-    location?: string;
-    phone_number?: string;
-    farm_size?: number;
-    crops?: string[];
-  };
+  profile?: UserProfile;
   is_active: boolean;
   date_joined: string;
-  last_login: string;
+  last_login?: string;
 }
 
-interface AuthContextType {
-  user: User | null;
-  loading: boolean;
-  isAuthenticated: boolean;
-  login: (
-    username: string,
-    password: string
-  ) => Promise<{ success: boolean; error?: string }>;
-  logout: () => Promise<void>;
-  register: (
-    userData: RegisterData
-  ) => Promise<{ success: boolean; error?: string }>;
-  refreshToken: () => Promise<boolean>;
-  updateProfile: (
-    data: Partial<User["profile"]>
-  ) => Promise<{ success: boolean; error?: string }>;
-  changePassword: (
-    oldPassword: string,
-    newPassword: string
-  ) => Promise<{ success: boolean; error?: string }>;
+interface AuthResponse {
+  success: boolean;
+  error?: string;
+  data?: any;
+  message?: string;
 }
 
 interface RegisterData {
@@ -64,6 +57,44 @@ interface RegisterData {
   };
 }
 
+interface LoginResponse {
+  success: boolean;
+  message?: string;
+  token?: string;
+  user?: User;
+  profile?: UserProfile;
+  error?: string;
+}
+
+interface AuthContextType {
+  // State
+  user: User | null;
+  loading: boolean;
+  isAuthenticated: boolean;
+  token: string | null;
+  initialized: boolean;
+
+  // Actions
+  login: (username: string, password: string) => Promise<AuthResponse>;
+  logout: () => Promise<void>;
+  register: (userData: RegisterData) => Promise<AuthResponse>;
+  refreshAuth: () => Promise<boolean>;
+  updateProfile: (data: Partial<UserProfile>) => Promise<AuthResponse>;
+  changePassword: (
+    oldPassword: string,
+    newPassword: string
+  ) => Promise<AuthResponse>;
+
+  // Utilities
+  getAuthHeaders: () => Record<string, string>;
+  isTokenValid: () => boolean;
+  clearAuthData: () => void;
+}
+
+// ==========================================
+// 🔷 CONTEXT CREATION
+// ==========================================
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
@@ -74,410 +105,674 @@ export const useAuth = () => {
   return context;
 };
 
+// ==========================================
+// 🔷 AUTH PROVIDER COMPONENT
+// ==========================================
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  // State Management
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
+
+  // Refs to prevent unnecessary re-renders and manage state
+  const initializingRef = useRef(false);
+  const loginInProgressRef = useRef(false);
   const router = useRouter();
 
-  // Get API base URL
-  const getApiUrl = (endpoint: string) => {
-    const baseUrl =
-      process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1";
-    return `${baseUrl}${endpoint}`;
+  // Constants
+  const TOKEN_KEY = "authToken";
+  const USER_KEY = "userData";
+  const API_BASE_URL =
+    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1";
+
+  // ==========================================
+  // 🔧 UTILITY FUNCTIONS
+  // ==========================================
+
+  const getApiUrl = (endpoint: string): string => {
+    const cleanEndpoint = endpoint.startsWith("/")
+      ? endpoint.slice(1)
+      : endpoint;
+    const finalUrl = `${API_BASE_URL}/${cleanEndpoint}`;
+
+    console.log(`🔗 URL constructed: ${finalUrl}`);
+    return finalUrl;
   };
 
-  // Get stored token
-  const getStoredToken = (): string | null => {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem("authToken");
-  };
+  const getAuthHeaders = useCallback((): Record<string, string> => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    };
 
-  // Store token
-  const storeToken = (token: string) => {
-    localStorage.setItem("authToken", token);
-  };
+    if (token) {
+      headers.Authorization = `Token ${token}`;
+    }
 
-  // Remove token
-  const removeToken = () => {
-    localStorage.removeItem("authToken");
-    // Remove old JWT tokens if they exist
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-  };
+    return headers;
+  }, [token]);
 
-  // fetchUserProfile function
-  const fetchUserProfile = async (token: string) => {
+  const isTokenValid = useCallback((): boolean => {
+    const valid = !!token && token.length > 20;
+    console.log(`🔍 Token validation: ${valid ? "✅ Valid" : "❌ Invalid"}`);
+    return valid;
+  }, [token]);
+
+  // ==========================================
+  // 🗄️ ENHANCED STORAGE UTILITIES
+  // ==========================================
+
+  const storeAuthData = useCallback((authToken: string, userData: User) => {
     try {
-      console.log(
-        "🔍 Fetching profile with token:",
-        token.substring(0, 20) + "..."
-      );
+      console.log("💾 Storing auth data...");
+      console.log("👤 User:", userData.username);
+      console.log("🔑 Token:", authToken.substring(0, 20) + "...");
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/mongo-profile/`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
+      if (typeof window !== "undefined") {
+        // Store in localStorage
+        localStorage.setItem(TOKEN_KEY, authToken);
+        localStorage.setItem(USER_KEY, JSON.stringify(userData));
+
+        // Verify storage immediately
+        const storedToken = localStorage.getItem(TOKEN_KEY);
+        const storedUser = localStorage.getItem(USER_KEY);
+
+        if (!storedToken || !storedUser) {
+          throw new Error("Failed to store auth data in localStorage");
         }
-      );
 
-      console.log("📡 Profile response status:", response.status);
-
-      if (response.ok) {
-        const responseData = await response.json();
-        console.log("✅ Profile data received:", responseData);
-
-        if (responseData.success && responseData.data) {
-          setUser(responseData.data);
-          return responseData.data;
-        } else {
-          console.log("❌ Profile response not successful:", responseData);
-          return null;
-        }
-      } else {
-        console.log("❌ Profile fetch failed with status:", response.status);
-        return null;
+        console.log("✅ LocalStorage verification passed");
       }
+
+      // Set state
+      setToken(authToken);
+      setUser(userData);
+
+      // Verify state was set
+      console.log("✅ Auth state updated successfully");
+      console.log("📊 Final state:", {
+        hasToken: !!authToken,
+        hasUser: !!userData,
+        userId: userData.id,
+        username: userData.username,
+      });
     } catch (error) {
-      console.error("❌ Failed to fetch user profile:", error);
+      console.error("❌ Failed to store auth data:", error);
+      throw error;
+    }
+  }, []);
+
+  const clearAuthData = useCallback(() => {
+    try {
+      console.log("🗑️ Clearing auth data...");
+
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+        // Clear any legacy tokens
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("rememberMe");
+      }
+
+      setToken(null);
+      setUser(null);
+
+      console.log("✅ Auth data cleared successfully");
+    } catch (error) {
+      console.error("❌ Failed to clear auth data:", error);
+    }
+  }, []);
+
+  const loadAuthData = useCallback((): { token: string; user: User } | null => {
+    if (typeof window === "undefined") {
+      console.log("🏠 Server-side rendering - no storage access");
       return null;
+    }
+
+    try {
+      const storedToken = localStorage.getItem(TOKEN_KEY);
+      const storedUser = localStorage.getItem(USER_KEY);
+
+      console.log("📥 Loading auth data:", {
+        hasToken: !!storedToken,
+        hasUser: !!storedUser,
+        tokenPreview: storedToken
+          ? storedToken.substring(0, 20) + "..."
+          : "none",
+      });
+
+      if (storedToken && storedUser) {
+        const userData = JSON.parse(storedUser);
+        console.log("✅ Auth data loaded for user:", userData.username);
+        return { token: storedToken, user: userData };
+      }
+
+      console.log("ℹ️ No valid auth data found in storage");
+      return null;
+    } catch (error) {
+      console.error("❌ Failed to load auth data:", error);
+      clearAuthData();
+      return null;
+    }
+  }, [clearAuthData]);
+
+  // ==========================================
+  // 🌐 API UTILITIES
+  // ==========================================
+
+  const apiCall = async (
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<any> => {
+    try {
+      const url = getApiUrl(endpoint);
+      const headers = {
+        ...getAuthHeaders(),
+        ...(options.headers || {}),
+      };
+
+      console.log(`🌐 API Call: ${options.method || "GET"} ${url}`);
+      console.log("📋 Headers:", JSON.stringify(headers, null, 2));
+
+      const response = await fetch(url, {
+        ...options,
+        headers,
+      });
+
+      console.log(`📡 Response: ${response.status} ${response.statusText}`);
+
+      // Handle different content types
+      const contentType = response.headers.get("content-type");
+      let data;
+
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const textResponse = await response.text();
+        data = { message: textResponse, text: textResponse };
+      }
+
+      if (!response.ok) {
+        // Handle different error formats
+        const errorMessage =
+          data.message ||
+          data.error ||
+          data.detail ||
+          data.non_field_errors?.[0] ||
+          `HTTP ${response.status}: ${response.statusText}`;
+
+        console.log("❌ API Error Details:", {
+          status: response.status,
+          statusText: response.statusText,
+          errorMessage,
+          fullResponse: data,
+        });
+
+        throw new Error(errorMessage);
+      }
+
+      console.log("✅ API call successful");
+      console.log("📊 Response data:", data);
+      return data;
+    } catch (error) {
+      console.error("❌ API call failed:", error);
+      throw error;
     }
   };
 
-  // Login function - Updated to match your Django endpoint
+  // ==========================================
+  // 🔐 ENHANCED AUTHENTICATION METHODS
+  // ==========================================
+
   const login = async (
     username: string,
     password: string
-  ): Promise<{ success: boolean; error?: string }> => {
-    try {
-      setLoading(true);
-      console.log("🔐 Attempting login for:", username);
+  ): Promise<AuthResponse> => {
+    // Prevent concurrent logins
+    if (loginInProgressRef.current) {
+      console.log("⏳ Login already in progress, skipping...");
+      return { success: false, error: "Login already in progress" };
+    }
 
-      const response = await fetch(getApiUrl("/users/login/"), {
+    try {
+      loginInProgressRef.current = true;
+      setLoading(true);
+      console.log("🔐 Starting login process for:", username);
+
+      const response = await apiCall("users/login/", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({
+          username: username.trim(),
+          password: password,
+        }),
       });
 
-      console.log("📡 Login response status:", response.status);
+      console.log("📥 Login response received:", {
+        success: response.success,
+        hasToken: !!response.token,
+        hasUser: !!response.user,
+        message: response.message,
+      });
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log("✅ Login response:", data);
+      if (response.success && response.token && response.user) {
+        // Construct user data from response
+        const userData: User = {
+          ...response.user,
+          profile: response.profile || response.user?.profile || undefined,
+        };
 
-        // Your Django might return different token structure
-        // Adjust this based on your actual Django response
-        if (data.token || data.access || data.key) {
-          const token = data.token || data.access || data.key;
-          storeToken(token);
+        console.log("👤 User data constructed:", {
+          id: userData.id,
+          username: userData.username,
+          email: userData.email,
+          hasProfile: !!userData.profile,
+        });
 
-          // Fetch user profile
-          const userProfile = await fetchUserProfile();
-          if (userProfile) {
-            setUser(userProfile);
-            console.log("✅ Login successful");
-            return { success: true };
-          } else {
-            removeToken();
-            return { success: false, error: "Failed to load user profile" };
+        // Store authentication data with error handling
+        await new Promise((resolve, reject) => {
+          try {
+            storeAuthData(response.token, userData);
+            resolve(void 0);
+          } catch (error) {
+            reject(error);
           }
-        } else {
-          return { success: false, error: "No token received from server" };
-        }
+        });
+
+        // Small delay to ensure state is fully updated
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        // Verify final state
+        console.log("🔍 Post-login state verification:", {
+          hasToken: !!token,
+          hasUser: !!user,
+          userMatch: user?.username === userData.username,
+          tokenMatch: token === response.token,
+        });
+
+        console.log("✅ Login completed successfully for:", userData.username);
+
+        return {
+          success: true,
+          data: userData,
+          message: response.message || "Login successful",
+        };
       } else {
-        let errorMessage = "Login failed";
-
-        try {
-          const errorData = await response.json();
-          errorMessage =
-            errorData.error ||
-            errorData.detail ||
-            errorData.non_field_errors?.[0] ||
-            errorMessage;
-        } catch {
-          errorMessage = `Login failed: ${response.status} ${response.statusText}`;
-        }
-
-        return { success: false, error: errorMessage };
+        const error =
+          response.message ||
+          response.error ||
+          "Login failed - missing required data";
+        console.log("❌ Login failed:", {
+          error,
+          hasSuccess: response.success,
+          hasToken: !!response.token,
+          hasUser: !!response.user,
+        });
+        return { success: false, error };
       }
     } catch (error) {
-      console.error("Login error:", error);
-      return {
-        success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Network error. Please check your connection.",
-      };
+      const errorMessage =
+        error instanceof Error ? error.message : "Network error occurred";
+      console.error("❌ Login exception:", {
+        error: errorMessage,
+        type: typeof error,
+        details: error,
+      });
+      return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
+      loginInProgressRef.current = false;
+      console.log("🔓 Login process completed");
     }
   };
 
-  // Logout function - Updated to match your Django endpoint
   const logout = async (): Promise<void> => {
     try {
-      const token = getStoredToken();
+      console.log("👋 Starting logout process...");
 
-      if (token) {
-        // Call Django logout endpoint
+      // Attempt server-side logout if token exists
+      if (token && isTokenValid()) {
         try {
-          await fetch(getApiUrl("/users/logout/"), {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          });
+          await apiCall("users/logout/", { method: "POST" });
           console.log("✅ Server logout successful");
         } catch (error) {
-          console.warn("Failed to logout on server:", error);
+          console.warn("⚠️ Server logout failed:", error);
           // Don't throw error, continue with local logout
         }
       }
-    } finally {
-      // Always clear local state
-      removeToken();
-      setUser(null);
-      console.log("👋 Local logout completed");
+
+      // Always clear local auth data
+      clearAuthData();
+      console.log("✅ Local logout completed");
+
+      // Redirect to login page
+      console.log("🔄 Redirecting to login page...");
+      router.push("/login");
+    } catch (error) {
+      console.error("❌ Logout error:", error);
+      // Still clear local data even if logout fails
+      clearAuthData();
       router.push("/login");
     }
   };
 
-  // Register function - Updated to match your Django endpoint
-  const register = async (
-    userData: RegisterData
-  ): Promise<{ success: boolean; error?: string }> => {
+  const refreshAuth = useCallback(async (): Promise<boolean> => {
+    if (!token || !isTokenValid()) {
+      console.log("❌ No valid token for refresh");
+      return false;
+    }
+
+    try {
+      console.log("🔄 Refreshing authentication...");
+
+      const response = await apiCall("users/profile/");
+
+      if (response.success && response.data) {
+        const userData: User = {
+          ...response.data,
+          profile: response.data.profile || response.profile || undefined,
+        };
+
+        // Update user data
+        setUser(userData);
+
+        // Update stored user data
+        if (typeof window !== "undefined") {
+          localStorage.setItem(USER_KEY, JSON.stringify(userData));
+        }
+
+        console.log("✅ Auth refresh successful for:", userData.username);
+        return true;
+      } else {
+        console.log("❌ Auth refresh failed: Invalid response");
+        return false;
+      }
+    } catch (error) {
+      console.error("❌ Auth refresh failed:", error);
+      return false;
+    }
+  }, [token, isTokenValid]);
+
+  const register = async (userData: RegisterData): Promise<AuthResponse> => {
     try {
       setLoading(true);
-      console.log("📝 Attempting registration for:", userData.username);
+      console.log("📝 Starting registration for:", userData.username);
 
-      const response = await fetch(getApiUrl("/users/register/"), {
+      const response = await apiCall("users/register/", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify(userData),
       });
 
-      console.log("📡 Registration response status:", response.status);
+      console.log("📥 Registration response:", response);
 
-      if (response.ok) {
-        const result = await response.json();
-        console.log("✅ Registration response:", result);
+      if (response.success) {
+        // Check if auto-login is enabled (token provided)
+        if (response.token && response.user) {
+          const user: User = {
+            ...response.user,
+            profile: response.profile || response.user?.profile || undefined,
+          };
 
-        // Check if auto-login token is provided
-        if (result.token || result.access || result.key) {
-          const token = result.token || result.access || result.key;
-          storeToken(token);
-
-          const userProfile = await fetchUserProfile();
-          if (userProfile) {
-            setUser(userProfile);
-            console.log("✅ Registration and auto-login successful");
-            return { success: true };
-          }
+          storeAuthData(response.token, user);
+          console.log("✅ Registration and auto-login successful");
+        } else {
+          console.log("✅ Registration successful, manual login required");
         }
 
-        // If no auto-login, redirect to login
-        console.log("✅ Registration successful, redirect to login");
-        return { success: true };
+        return {
+          success: true,
+          data: response,
+          message: response.message || "Registration successful",
+        };
       } else {
-        let errorMessage = "Registration failed";
-
-        try {
-          const errorData = await response.json();
-          errorMessage =
-            errorData.detail ||
-            errorData.username?.[0] ||
-            errorData.email?.[0] ||
-            errorData.password?.[0] ||
-            errorMessage;
-        } catch {
-          errorMessage = `Registration failed: ${response.status} ${response.statusText}`;
-        }
-
-        return { success: false, error: errorMessage };
+        const error =
+          response.message || response.error || "Registration failed";
+        return { success: false, error };
       }
     } catch (error) {
-      console.error("Registration error:", error);
-      return {
-        success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Network error. Please try again.",
-      };
+      const errorMessage =
+        error instanceof Error ? error.message : "Registration failed";
+      console.error("❌ Registration error:", errorMessage);
+      return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }
   };
 
-  // Refresh token - Simplified since your Django may not use JWT refresh pattern
-  const refreshToken = useCallback(async (): Promise<boolean> => {
-    try {
-      const token = getStoredToken();
-      if (!token) return false;
-
-      // Try to fetch user profile to validate token
-      const userProfile = await fetchUserProfile();
-      if (userProfile) {
-        setUser(userProfile);
-        return true;
-      } else {
-        // Token is invalid
-        await logout();
-        return false;
-      }
-    } catch (error) {
-      console.error("Token validation failed:", error);
-      await logout();
-      return false;
-    }
-  }, []);
-
-  // Update profile function
   const updateProfile = async (
-    data: Partial<User["profile"]>
-  ): Promise<{ success: boolean; error?: string }> => {
+    profileData: Partial<UserProfile>
+  ): Promise<AuthResponse> => {
     try {
-      const token = getStoredToken();
-      if (!token) {
+      if (!isTokenValid()) {
         return { success: false, error: "Not authenticated" };
       }
 
-      const response = await fetch(getApiUrl("/users/profile/"), {
+      console.log("📝 Updating profile...");
+
+      const response = await apiCall("users/profile/", {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(data),
+        body: JSON.stringify(profileData),
       });
 
-      if (response.ok) {
-        const updatedUser = await response.json();
-        setUser(updatedUser);
-        return { success: true };
-      } else {
-        const errorData = await response.json();
-        return {
-          success: false,
-          error: errorData.detail || "Failed to update profile",
+      if (response.success && user) {
+        const updatedUser: User = {
+          ...user,
+          profile: {
+            ...user.profile,
+            ...response.data?.profile,
+            ...profileData,
+          },
         };
+
+        setUser(updatedUser);
+
+        if (typeof window !== "undefined") {
+          localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+        }
+
+        console.log("✅ Profile update successful");
+        return {
+          success: true,
+          data: updatedUser,
+          message: response.message || "Profile updated successfully",
+        };
+      } else {
+        const error =
+          response.message || response.error || "Profile update failed";
+        return { success: false, error };
       }
-    } catch (error: any) {
-      console.error("Profile update error:", error);
-      return {
-        success: false,
-        error: error.message || "Failed to update profile",
-      };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Profile update failed";
+      console.error("❌ Profile update error:", errorMessage);
+      return { success: false, error: errorMessage };
     }
   };
 
-  // Change password function
   const changePassword = async (
     oldPassword: string,
     newPassword: string
-  ): Promise<{ success: boolean; error?: string }> => {
+  ): Promise<AuthResponse> => {
     try {
-      const token = getStoredToken();
-      if (!token) {
+      if (!isTokenValid()) {
         return { success: false, error: "Not authenticated" };
       }
 
-      const response = await fetch(getApiUrl("/users/change-password/"), {
+      console.log("🔐 Changing password...");
+
+      const response = await apiCall("users/change-password/", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify({
           old_password: oldPassword,
           new_password: newPassword,
         }),
       });
 
-      if (response.ok) {
-        return { success: true };
-      } else {
-        const errorData = await response.json();
+      if (response.success) {
+        console.log("✅ Password change successful");
         return {
-          success: false,
-          error:
-            errorData.detail ||
-            errorData.old_password?.[0] ||
-            errorData.new_password?.[0] ||
-            "Failed to change password",
+          success: true,
+          message: response.message || "Password changed successfully",
         };
+      } else {
+        const error =
+          response.message || response.error || "Password change failed";
+        return { success: false, error };
       }
-    } catch (error: any) {
-      console.error("Password change error:", error);
-      return {
-        success: false,
-        error: error.message || "Failed to change password",
-      };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Password change failed";
+      console.error("❌ Password change error:", errorMessage);
+      return { success: false, error: errorMessage };
     }
   };
 
-  // Initialize authentication state
+  // ==========================================
+  // 🚀 ENHANCED INITIALIZATION
+  // ==========================================
+
   useEffect(() => {
     const initAuth = async () => {
-      console.log("🚀 Initializing auth state...");
-      const token = getStoredToken();
-
-      if (token) {
-        console.log("🔑 Token found, validating...");
-        const userProfile = await fetchUserProfile();
-        if (userProfile) {
-          setUser(userProfile);
-          console.log("✅ Auth state initialized with user");
-        } else {
-          console.log("❌ Token validation failed, clearing");
-          removeToken();
-        }
-      } else {
-        console.log("ℹ️ No token found");
+      // Prevent multiple initializations
+      if (initializingRef.current || initialized) {
+        console.log("⏭️ Skipping auth init - already done");
+        return;
       }
 
-      setLoading(false);
+      initializingRef.current = true;
+      console.log("🚀 Starting authentication initialization...");
+      console.log("🌐 API Base URL:", API_BASE_URL);
+      console.log("🔧 Environment:", process.env.NODE_ENV);
+
+      try {
+        // Small delay to ensure DOM is ready
+        await new Promise((resolve) => setTimeout(resolve, 50));
+
+        const authData = loadAuthData();
+
+        if (authData) {
+          console.log("🔑 Processing stored auth data...");
+
+          // Set initial state
+          setToken(authData.token);
+          setUser(authData.user);
+
+          console.log("✅ Initial auth state set from storage");
+
+          // Validate token in background (non-blocking)
+          setTimeout(async () => {
+            try {
+              console.log("🔄 Validating stored token...");
+              const isValid = await refreshAuth();
+              if (!isValid) {
+                console.log("⚠️ Stored token is invalid, clearing...");
+                clearAuthData();
+              } else {
+                console.log("✅ Stored token is valid");
+              }
+            } catch (error) {
+              console.log("⚠️ Token validation failed:", error);
+              clearAuthData();
+            }
+          }, 500); // Delay to not block UI
+        } else {
+          console.log("ℹ️ No stored auth data found - fresh start");
+        }
+      } catch (error) {
+        console.error("❌ Auth initialization error:", error);
+        clearAuthData();
+      } finally {
+        setLoading(false);
+        setInitialized(true);
+        initializingRef.current = false;
+
+        console.log("✅ Auth initialization completed");
+        console.log("📊 Final init state:", {
+          hasUser: !!user,
+          hasToken: !!token,
+          isAuthenticated: !!(user && token),
+          initialized: true,
+        });
+      }
     };
 
     initAuth();
-  }, []);
+  }, []); // Empty dependency array - only run once
 
-  // Periodic token validation (every 30 minutes)
+  // ==========================================
+  // 🔄 PERIODIC TOKEN VALIDATION
+  // ==========================================
+
   useEffect(() => {
-    if (!user) return;
+    if (!user || !token || !initialized) {
+      console.log("⏭️ Skipping periodic validation - not ready");
+      return;
+    }
+
+    console.log("⏰ Setting up periodic token validation");
 
     const interval = setInterval(
       () => {
-        console.log("🔄 Validating token...");
-        refreshToken();
+        console.log("🔄 Performing periodic token validation...");
+        refreshAuth().catch((error) => {
+          console.error("❌ Periodic validation failed:", error);
+        });
       },
       30 * 60 * 1000
-    );
+    ); // 30 minutes
 
-    return () => clearInterval(interval);
-  }, [user, refreshToken]);
+    return () => {
+      console.log("🛑 Clearing token validation interval");
+      clearInterval(interval);
+    };
+  }, [user, token, initialized, refreshAuth]);
 
-  const value: AuthContextType = {
+  // ==========================================
+  // 🎯 CONTEXT VALUE
+  // ==========================================
+
+  const contextValue: AuthContextType = {
+    // State
     user,
     loading,
-    isAuthenticated: !!user,
+    isAuthenticated: !!user && !!token,
+    token,
+    initialized,
+
+    // Actions
     login,
     logout,
     register,
-    refreshToken,
+    refreshAuth,
     updateProfile,
     changePassword,
+
+    // Utilities
+    getAuthHeaders,
+    isTokenValid,
+    clearAuthData,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  // Debug context value changes
+  useEffect(() => {
+    console.log("🔄 AuthContext state update:", {
+      hasUser: !!user,
+      hasToken: !!token,
+      isAuthenticated: !!(user && token),
+      loading,
+      initialized,
+      username: user?.username || "none",
+      tokenPreview: token ? token.substring(0, 20) + "..." : "none",
+    });
+  }, [user, token, loading, initialized]);
+
+  return (
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
+  );
 };
+
+export default AuthProvider;

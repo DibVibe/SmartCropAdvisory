@@ -12,15 +12,29 @@ import {
 } from '@heroicons/react/24/outline'
 
 export default function YieldPredictionPage() {
-  const [activeTab, setActiveTab] = useState('prediction')
-  const [formData, setFormData] = useState({
+  const [activeTab, setActiveTab] = useState<'prediction' | 'historical' | 'forecasting'>('prediction')
+  const [formData, setFormData] = useState<{ 
+    cropType: string;
+    fieldSize: string;
+    soilType: string;
+    plantingDate: string;
+    location: string;
+  }>({
     cropType: '',
     fieldSize: '',
     soilType: '',
     plantingDate: '',
     location: ''
   })
-  const [prediction, setPrediction] = useState(null)
+  const [prediction, setPrediction] = useState<{
+    estimatedYield: number;
+    confidence: number;
+    profitability: string;
+    riskLevel: string;
+    harvestDate: string;
+    marketValue: number;
+    recommendations: string[];
+  } | null>(null)
 
   const tabs = [
     { id: 'prediction', name: 'Yield Prediction', icon: ChartBarIcon },
@@ -48,7 +62,7 @@ export default function YieldPredictionPage() {
     { name: 'Water Availability', impact: 10, status: 'Moderate', color: 'yellow' }
   ]
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
@@ -153,7 +167,7 @@ export default function YieldPredictionPage() {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => setActiveTab(tab.id as 'prediction' | 'historical' | 'forecasting')}
                 className={`
                   flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors
                   ${activeTab === tab.id

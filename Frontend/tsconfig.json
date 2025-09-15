@@ -22,6 +22,7 @@
     "paths": {
       "@/*": ["./*"],
       "@/components/*": ["./components/*"],
+      "@/lib/api": ["./lib/api/index.ts"],
       "@/lib/*": ["./lib/*"],
       "@/app/*": ["./app/*"],
       "@/hooks/*": ["./hooks/*", "./lib/hooks/*"],

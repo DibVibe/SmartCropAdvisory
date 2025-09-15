@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { weatherApi } from '../Api'
+// import { weatherApi } from '../api'
 
 export interface WeatherData {
   temperature: number

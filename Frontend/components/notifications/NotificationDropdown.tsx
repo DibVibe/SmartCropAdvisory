@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useAPI } from "@/contexts/APIContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Alert } from "@/types/api";
 import { BellIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { BellIcon as BellIconSolid } from "@heroicons/react/24/solid";
@@ -16,6 +17,7 @@ export function NotificationDropdown({
   onCountChange,
 }: NotificationDropdownProps) {
   const { advisoryService } = useAPI();
+  const { isAuthenticated } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(false);
@@ -23,6 +25,7 @@ export function NotificationDropdown({
 
   // Fetch recent notifications
   const fetchRecentNotifications = async () => {
+    if (!isAuthenticated) return;
     try {
       setLoading(true);
       const alerts = await advisoryService.getRecentAlerts(5); // Get only 5 most recent

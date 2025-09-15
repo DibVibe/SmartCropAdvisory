@@ -4,19 +4,16 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.authtoken.models import Token
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework.authentication import TokenAuthentication
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate
 from django.utils import timezone
 from django.db.models import Q, Count, Avg
 from django.db import transaction
 from datetime import datetime, timedelta
 import secrets
 import logging
-from .serializers import MongoLoginSerializer
+from bson import ObjectId
+
+# Import your models and serializers
 from .models import (
     UserProfile,
     Subscription,
@@ -35,55 +32,127 @@ from .mongo_models import (
     MongoApiKey,
 )
 from .serializers import (
+    MongoLoginSerializer,
+    MongoUserSerializer,
+    MongoUserProfileSerializer,
+    MongoUserRegistrationSerializer,
+    MongoChangePasswordSerializer,
+    MongoProfileUpdateSerializer,
+    MongoTokenSerializer,
+    MongoActivityLogSerializer,
+    MongoNotificationSerializer,
+    MongoFeedbackSerializer,
+    MongoSubscriptionSerializer,
+    MongoApiKeySerializer,
     UserSerializer,
     UserProfileSerializer,
-    UserRegistrationSerializer,
-    LoginSerializer,
-    ChangePasswordSerializer,
     SubscriptionSerializer,
     ActivityLogSerializer,
     NotificationSerializer,
     FeedbackSerializer,
     ApiKeySerializer,
     ProfileUpdateSerializer,
-    DashboardSerializer,
-    MongoUserSerializer,
-    MongoUserProfileSerializer,
 )
 from .utils import send_otp, verify_otp, send_notification
 
 logger = logging.getLogger(__name__)
 
+# Import token manager
+try:
+    from .token_manager import token_manager
+except ImportError:
+    # Fallback token manager if not available
+    class SimpleTokenManager:
+        _tokens = {}
 
-class UserRegistrationView(CreateAPIView):
-    """User registration endpoint using MongoDB"""
+        def generate_token(self):
+            return secrets.token_hex(32)
+
+        def store_token(self, token, user_id, expiry_hours=168):
+            self._tokens[token] = {
+                "user_id": user_id,
+                "expires": timezone.now() + timedelta(hours=expiry_hours),
+            }
+            return True
+
+        def get_user_id_by_token(self, token):
+            token_data = self._tokens.get(token)
+            if token_data and token_data["expires"] > timezone.now():
+                return token_data["user_id"]
+            return None
+
+        def delete_token(self, token):
+            self._tokens.pop(token, None)
+            return True
+
+    token_manager = SimpleTokenManager()
+
+
+# ==========================================
+# 🔐 AUTHENTICATION MIXIN
+# ==========================================
+
+
+class TokenAuthenticationMixin:
+    """Mixin for MongoDB token-based authentication"""
+
+    def get_user_from_token(self, request):
+        """Extract and validate user from MongoDB token"""
+        auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+
+        if not auth_header.startswith("Bearer "):
+            return None, {"success": False, "message": "Authorization header required"}
+
+        token = auth_header.split(" ")[1]
+        user_id = token_manager.get_user_id_by_token(token)
+
+        if not user_id:
+            return None, {"success": False, "message": "Invalid or expired token"}
+
+        try:
+            # Try to convert to ObjectId first, then string
+            try:
+                user = MongoUser.objects(id=ObjectId(user_id)).first()
+            except:
+                user = MongoUser.objects(id=user_id).first()
+
+            if not user:
+                return None, {"success": False, "message": "User not found"}
+
+            if not user.is_active:
+                return None, {"success": False, "message": "User account is disabled"}
+
+            return user, None
+
+        except Exception as e:
+            logger.error(f"Error getting user from token: {e}")
+            return None, {"success": False, "message": "Invalid token"}
+
+
+# ==========================================
+# 🍃 MONGODB AUTHENTICATION VIEWS
+# ==========================================
+
+
+class UserRegistrationView(CreateAPIView, TokenAuthenticationMixin):
+    """MongoDB User registration endpoint"""
 
     permission_classes = [AllowAny]
 
-    @transaction.atomic
     def create(self, request, *args, **kwargs):
         try:
-            data = request.data
+            serializer = MongoUserRegistrationSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
 
-            # Check if user exists
-            if MongoUser.objects(username=data.get("username")).first():
-                return Response(
-                    {"success": False, "message": "Username already exists"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            if MongoUser.objects(email=data.get("email")).first():
-                return Response(
-                    {"success": False, "message": "Email already exists"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+            data = serializer.validated_data
 
             # Create user profile
             profile = MongoUserProfile(
                 user_type=data.get("user_type", "farmer"),
                 phone_number=data.get("phone_number"),
                 language=data.get("preferred_language", "en"),
-                # Add other profile fields as needed
+                created_at=timezone.now(),
+                updated_at=timezone.now(),
             )
 
             # Create user
@@ -93,80 +162,87 @@ class UserRegistrationView(CreateAPIView):
                 first_name=data.get("first_name", ""),
                 last_name=data.get("last_name", ""),
                 profile=profile,
+                date_joined=timezone.now(),
+                is_active=True,
+                is_staff=False,
             )
-            user.set_password(data["password"])  # Hash password
+            user.set_password(data["password"])
             user.save()
 
-            print(f"✅ User saved to MongoDB: {user.username} (ID: {user.id})")
+            logger.info(f"✅ User created: {user.username} (ID: {user.id})")
 
-            # Create auth token (you might want to use JWT instead)
-            token = secrets.token_hex(20)
+            # Create and store auth token
+            token = token_manager.generate_token()
+            token_manager.store_token(token, str(user.id))
 
             # Log registration activity
             MongoActivityLog(
-                user_id=user.id,
+                user_id=str(user.id),
                 activity_type="user_registered",
                 description=f"User {user.username} registered",
                 ip_address=request.META.get("REMOTE_ADDR"),
                 user_agent=request.META.get("HTTP_USER_AGENT", ""),
+                created_at=timezone.now(),
             ).save()
 
             # Send welcome notification
             MongoNotification(
-                user_id=user.id,
+                user_id=str(user.id),
                 notification_type="info",
                 title="Welcome to SmartCropAdvisory!",
                 message=f"Welcome {user.first_name or user.username}! Your account has been created successfully.",
                 channel="in_app",
+                created_at=timezone.now(),
             ).save()
 
-            return Response(
-                {
-                    "success": True,
-                    "message": "Registration successful",
-                    "user": {
-                        "id": str(user.id),
-                        "username": user.username,
-                        "email": user.email,
-                        "first_name": user.first_name,
-                        "last_name": user.last_name,
-                        "date_joined": user.date_joined,
-                    },
-                    "profile": {
-                        "user_type": (
-                            user.profile.user_type if user.profile else "farmer"
-                        ),
-                        "phone_number": (
-                            user.profile.phone_number if user.profile else None
-                        ),
-                        "language": user.profile.language if user.profile else "en",
-                    },
-                    "token": token,
+            response_data = {
+                "success": True,
+                "message": "Registration successful",
+                "user": {
+                    "id": str(user.id),
+                    "username": user.username,
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "date_joined": user.date_joined,
+                    "is_active": user.is_active,
                 },
-                status=status.HTTP_201_CREATED,
-            )
+                "profile": {
+                    "user_type": user.profile.user_type if user.profile else "farmer",
+                    "phone_number": user.profile.phone_number if user.profile else None,
+                    "language": user.profile.language if user.profile else "en",
+                    "phone_verified": (
+                        user.profile.phone_verified if user.profile else False
+                    ),
+                    "email_verified": (
+                        user.profile.email_verified if user.profile else False
+                    ),
+                },
+                "token": token,
+                "expires_in": 7 * 24 * 3600,  # 7 days in seconds
+                "token_type": "Bearer",
+            }
+
+            return Response(response_data, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             logger.error(f"Registration failed: {str(e)}")
+            import traceback
+
+            traceback.print_exc()
             return Response(
                 {"success": False, "message": "Registration failed", "error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
 
-class LoginView(generics.GenericAPIView):
-    """
-    User login endpoint for MongoDB users.
-
-    Authenticates user with username/email and password.
-    Returns user data and authentication tokens.
-    """
+class LoginView(generics.GenericAPIView, TokenAuthenticationMixin):
+    """MongoDB User login endpoint"""
 
     serializer_class = MongoLoginSerializer
     permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
-        """Authenticate user and return tokens."""
         try:
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
@@ -174,64 +250,72 @@ class LoginView(generics.GenericAPIView):
 
             # Update last login
             user.last_login = timezone.now()
-            user.save()
 
             # Update profile last login IP if profile exists
             if user.profile:
                 user.profile.last_login_ip = request.META.get("REMOTE_ADDR")
                 user.profile.updated_at = timezone.now()
-                user.save()
 
-            # Create simple token (you might want to use JWT)
-            token = secrets.token_hex(20)
+            user.save()
+
+            # Create and store auth token
+            token = token_manager.generate_token()
+            token_manager.store_token(token, str(user.id))
 
             # Log activity
             MongoActivityLog(
-                user_id=user.id,
+                user_id=str(user.id),
                 activity_type="login",
                 description=f"User {user.username} logged in",
                 ip_address=request.META.get("REMOTE_ADDR"),
                 user_agent=request.META.get("HTTP_USER_AGENT", ""),
+                created_at=timezone.now(),
             ).save()
 
-            print(f"✅ Login successful for MongoDB user: {user.username}")
+            logger.info(f"✅ Login successful for: {user.username}")
 
-            return Response(
-                {
-                    "success": True,
-                    "message": "Login successful",
-                    "user": {
-                        "id": str(user.id),
-                        "username": user.username,
-                        "email": user.email,
-                        "first_name": user.first_name,
-                        "last_name": user.last_name,
-                        "date_joined": user.date_joined,
-                        "last_login": user.last_login,
-                        "is_active": user.is_active,
-                    },
-                    "profile": (
-                        {
-                            "user_type": (
-                                user.profile.user_type if user.profile else "farmer"
-                            ),
-                            "phone_number": (
-                                user.profile.phone_number if user.profile else None
-                            ),
-                            "language": user.profile.language if user.profile else "en",
-                            "phone_verified": (
-                                user.profile.phone_verified if user.profile else False
-                            ),
-                            "email_verified": (
-                                user.profile.email_verified if user.profile else False
-                            ),
-                        }
-                        if user.profile
-                        else None
-                    ),
-                    "token": token,  # Simple token - consider JWT for production
-                }
-            )
+            response_data = {
+                "success": True,
+                "message": "Login successful",
+                "user": {
+                    "id": str(user.id),
+                    "username": user.username,
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "date_joined": user.date_joined,
+                    "last_login": user.last_login,
+                    "is_active": user.is_active,
+                },
+                "profile": (
+                    {
+                        "user_type": (
+                            user.profile.user_type if user.profile else "farmer"
+                        ),
+                        "phone_number": (
+                            user.profile.phone_number if user.profile else None
+                        ),
+                        "language": user.profile.language if user.profile else "en",
+                        "phone_verified": (
+                            user.profile.phone_verified if user.profile else False
+                        ),
+                        "email_verified": (
+                            user.profile.email_verified if user.profile else False
+                        ),
+                        "farm_size": user.profile.farm_size if user.profile else None,
+                        "farming_experience": (
+                            user.profile.farming_experience if user.profile else None
+                        ),
+                    }
+                    if user.profile
+                    else None
+                ),
+                "token": token,
+                "expires_in": 7 * 24 * 3600,  # 7 days in seconds
+                "token_type": "Bearer",
+            }
+
+            return Response(response_data)
 
         except Exception as e:
             logger.error(f"Login failed: {str(e)}")
@@ -241,44 +325,19 @@ class LoginView(generics.GenericAPIView):
             )
 
 
-class MongoUserProfileView(APIView):
-    """
-    MongoDB User Profile endpoint.
-
-    Get and update current user's profile stored in MongoDB.
-    """
+class MongoUserProfileView(APIView, TokenAuthenticationMixin):
+    """MongoDB User Profile endpoint with proper token validation"""
 
     permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
         """Get current user's profile from MongoDB"""
         try:
-            auth_header = request.META.get("HTTP_AUTHORIZATION", "")
-            if not auth_header.startswith("Bearer "):
-                return Response(
-                    {"success": False, "message": "Authorization header required"},
-                    status=status.HTTP_401_UNAUTHORIZED,
-                )
+            user, error = self.get_user_from_token(request)
+            if error:
+                return Response(error, status=status.HTTP_401_UNAUTHORIZED)
 
-            token = auth_header.split(" ")[1]
-            print(f"🔍 Looking for user with token: {token[:20]}...")
-
-            # For now, we'll store token mapping in a simple way
-            # In production, use proper JWT or database token storage
-
-            # Let's try to find the user by checking if they just logged in
-            # This is a temporary solution - you should implement proper token storage
-
-            # For debugging, let's get the latest user
-            user = MongoUser.objects().order_by("-date_joined").first()
-
-            if not user:
-                return Response(
-                    {"success": False, "message": "User not found"},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
-
-            print(f"✅ Found MongoDB user: {user.username}")
+            logger.info(f"✅ Profile fetch for user: {user.username}")
 
             # Serialize user and profile data
             user_data = {
@@ -298,17 +357,22 @@ class MongoUserProfileView(APIView):
                 profile_data = {
                     "user_type": user.profile.user_type,
                     "phone_number": user.profile.phone_number,
+                    "alternate_phone": user.profile.alternate_phone,
                     "language": user.profile.language,
                     "phone_verified": user.profile.phone_verified,
                     "email_verified": user.profile.email_verified,
                     "farm_size": user.profile.farm_size,
                     "farming_experience": user.profile.farming_experience,
+                    "education_level": user.profile.education_level,
                     "address_line1": user.profile.address_line1,
+                    "address_line2": user.profile.address_line2,
                     "village": user.profile.village,
                     "district": user.profile.district,
                     "state": user.profile.state,
                     "pincode": user.profile.pincode,
                     "bio": user.profile.bio,
+                    "farming_type": user.profile.farming_type,
+                    "primary_crops": user.profile.primary_crops,
                     "created_at": user.profile.created_at,
                     "updated_at": user.profile.updated_at,
                 }
@@ -333,40 +397,29 @@ class MongoUserProfileView(APIView):
     def patch(self, request, *args, **kwargs):
         """Update current user's profile"""
         try:
-            # Same token validation as GET
-            auth_header = request.META.get("HTTP_AUTHORIZATION", "")
-            if not auth_header.startswith("Bearer "):
-                return Response(
-                    {"success": False, "message": "Authorization header required"},
-                    status=status.HTTP_401_UNAUTHORIZED,
-                )
+            user, error = self.get_user_from_token(request)
+            if error:
+                return Response(error, status=status.HTTP_401_UNAUTHORIZED)
 
-            # Get latest user (temporary solution)
-            user = MongoUser.objects().order_by("-date_joined").first()
+            serializer = MongoProfileUpdateSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
 
-            if not user:
-                return Response(
-                    {"success": False, "message": "User not found"},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
+            validated_data = serializer.validated_data
 
             # Update user fields
-            if "first_name" in request.data:
-                user.first_name = request.data["first_name"]
-            if "last_name" in request.data:
-                user.last_name = request.data["last_name"]
-            if "email" in request.data:
-                user.email = request.data["email"]
+            user_fields = ["first_name", "last_name", "email"]
+            for field in user_fields:
+                if field in validated_data:
+                    setattr(user, field, validated_data[field])
 
             # Update or create profile
             if not user.profile:
-                from .mongo_models import UserProfile as MongoUserProfile
-
-                user.profile = MongoUserProfile()
+                user.profile = MongoUserProfile(created_at=timezone.now())
 
             # Update profile fields
             profile_fields = [
                 "phone_number",
+                "alternate_phone",
                 "user_type",
                 "language",
                 "bio",
@@ -379,16 +432,26 @@ class MongoUserProfileView(APIView):
                 "farm_size",
                 "farming_experience",
                 "education_level",
-                "farming_type",
                 "primary_crops",
+                "farming_type",
             ]
 
             for field in profile_fields:
-                if field in request.data:
-                    setattr(user.profile, field, request.data[field])
+                if field in validated_data:
+                    setattr(user.profile, field, validated_data[field])
 
             user.profile.updated_at = timezone.now()
             user.save()
+
+            # Log activity
+            MongoActivityLog(
+                user_id=str(user.id),
+                activity_type="profile_update",
+                description="Profile updated via API",
+                ip_address=request.META.get("REMOTE_ADDR"),
+                metadata={"updated_fields": list(validated_data.keys())},
+                created_at=timezone.now(),
+            ).save()
 
             return Response(
                 {"success": True, "message": "Profile updated successfully"}
@@ -406,32 +469,37 @@ class MongoUserProfileView(APIView):
             )
 
 
-class LogoutView(generics.GenericAPIView):
-    """
-    User logout endpoint.
+class LogoutView(APIView, TokenAuthenticationMixin):
+    """MongoDB User logout endpoint with token invalidation"""
 
-    Invalidates authentication token and logs activity.
-    """
-
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication, TokenAuthentication]
+    permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
-        """Logout user and invalidate token."""
+        """Logout user and invalidate token"""
         try:
-            # Delete auth token
-            if hasattr(request.user, "auth_token"):
-                request.user.auth_token.delete()
+            # Extract token for invalidation
+            auth_header = request.META.get("HTTP_AUTHORIZATION", "")
 
-            # Log activity
-            ActivityLog.objects.create(
-                user=request.user,
-                activity_type="logout",
-                description="User logged out",
-                ip_address=request.META.get("REMOTE_ADDR"),
-            )
+            if auth_header.startswith("Bearer "):
+                token = auth_header.split(" ")[1]
+                user, _ = self.get_user_from_token(request)
+
+                if user:
+                    # Log activity before invalidating token
+                    MongoActivityLog(
+                        user_id=str(user.id),
+                        activity_type="logout",
+                        description="User logged out",
+                        ip_address=request.META.get("REMOTE_ADDR"),
+                        created_at=timezone.now(),
+                    ).save()
+
+                # Invalidate token
+                token_manager.delete_token(token)
+                logger.info("✅ Token invalidated on logout")
 
             return Response({"success": True, "message": "Logout successful"})
+
         except Exception as e:
             logger.error(f"Logout failed: {str(e)}")
             return Response(
@@ -440,48 +508,48 @@ class LogoutView(generics.GenericAPIView):
             )
 
 
-class ChangePasswordView(APIView):
-    """
-    Password change endpoint.
+class ChangePasswordView(APIView, TokenAuthenticationMixin):
+    """Password change endpoint for MongoDB users"""
 
-    Allows authenticated users to change their password.
-    """
-
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication, TokenAuthentication]
+    permission_classes = [AllowAny]
 
     def post(self, request):
-        """Change user password."""
+        """Change user password"""
         try:
-            serializer = ChangePasswordSerializer(
-                data=request.data,
-                context={"request": request},  # Pass context for serializer validation
+            user, error = self.get_user_from_token(request)
+            if error:
+                return Response(error, status=status.HTTP_401_UNAUTHORIZED)
+
+            serializer = MongoChangePasswordSerializer(
+                data=request.data, context={"user_id": str(user.id)}
             )
 
             if serializer.is_valid():
-                # Use serializer's save method to change password
-                serializer.save()
+                # Change password
+                user.set_password(serializer.validated_data["new_password"])
+                user.save()
 
                 # Log activity
-                ActivityLog.objects.create(
-                    user=request.user,
-                    action="password_changed",
-                    details={"changed_via": "api"},
+                MongoActivityLog(
+                    user_id=str(user.id),
+                    activity_type="password_changed",
+                    description="Password changed via API",
                     ip_address=request.META.get("REMOTE_ADDR"),
-                )
+                    created_at=timezone.now(),
+                ).save()
 
                 # Send notification
-                Notification.objects.create(
-                    user=request.user,
+                MongoNotification(
+                    user_id=str(user.id),
+                    notification_type="security",
                     title="Password Changed",
                     message="Your password has been changed successfully.",
-                    notification_type="security",
-                    priority="normal",
-                )
+                    channel="in_app",
+                    created_at=timezone.now(),
+                ).save()
 
                 return Response(
-                    {"success": True, "message": "Password changed successfully"},
-                    status=status.HTTP_200_OK,
+                    {"success": True, "message": "Password changed successfully"}
                 )
 
             return Response(
@@ -505,237 +573,113 @@ class ChangePasswordView(APIView):
             )
 
 
-class UserProfileViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for user profile management.
+# ==========================================
+# 🍃 ENHANCED VIEWSETS FOR URL COMPATIBILITY
+# ==========================================
 
-    Provides CRUD operations for user profiles with additional actions
-    for profile completion, verification, and picture upload.
-    """
+
+class UserProfileViewSet(viewsets.ModelViewSet, TokenAuthenticationMixin):
+    """Enhanced ViewSet that works with both Django and MongoDB"""
 
     serializer_class = UserProfileSerializer
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication, TokenAuthentication]
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
-        """Return profiles based on user permissions."""
-        if self.request.user.is_staff:
-            return UserProfile.objects.all()
-        return UserProfile.objects.filter(user=self.request.user)
+        """Return empty queryset - we'll use MongoDB"""
+        return UserProfile.objects.none()
 
     @action(detail=False, methods=["get"])
     def me(self, request):
-        """Get current user's profile."""
+        """Get current user's profile - MongoDB version"""
         try:
-            profile = UserProfile.objects.get(user=request.user)
-            serializer = self.get_serializer(profile)
-            return Response({"success": True, "data": serializer.data})
-        except UserProfile.DoesNotExist:
+            user, error = self.get_user_from_token(request)
+            if error:
+                return Response(error, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Return MongoDB user data
+            user_data = {
+                "id": str(user.id),
+                "username": user.username,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "profile": user.profile.__dict__ if user.profile else None,
+            }
+
+            return Response({"success": True, "data": user_data})
+        except Exception as e:
             return Response(
-                {"success": False, "message": "Profile not found"},
-                status=status.HTTP_404_NOT_FOUND,
+                {"success": False, "message": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
     @action(detail=False, methods=["put", "patch"])
     def update_profile(self, request):
-        """Update current user's profile."""
+        """Update current user's profile - MongoDB version"""
         try:
-            profile = UserProfile.objects.get(user=request.user)
-            serializer = ProfileUpdateSerializer(
-                profile, data=request.data, partial=True, context={"request": request}
-            )
+            user, error = self.get_user_from_token(request)
+            if error:
+                return Response(error, status=status.HTTP_401_UNAUTHORIZED)
 
-            if serializer.is_valid():
-                serializer.save()
-
-                # Log activity
-                ActivityLog.objects.create(
-                    user=request.user,
-                    activity_type="profile_update",
-                    description="Profile updated",
-                    metadata={"fields": list(request.data.keys())},
-                )
-
-                return Response(
-                    {
-                        "success": True,
-                        "message": "Profile updated successfully",
-                        "data": serializer.data,
-                    }
-                )
-
-            return Response(
-                {
-                    "success": False,
-                    "message": "Invalid data",
-                    "errors": serializer.errors,
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        except UserProfile.DoesNotExist:
-            return Response(
-                {"success": False, "message": "Profile not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            # Use MongoDB profile update logic
+            view = MongoUserProfileView()
+            view.request = request
+            return view.patch(request)
         except Exception as e:
-            logger.error(f"Profile update failed: {str(e)}")
             return Response(
-                {"success": False, "message": "Profile update failed", "error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-    @action(detail=False, methods=["post"])
-    def upload_picture(self, request):
-        """Upload profile picture."""
-        try:
-            profile = UserProfile.objects.get(user=request.user)
-
-            if "picture" not in request.FILES:
-                return Response(
-                    {"success": False, "message": "No picture provided"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            profile.profile_picture = request.FILES["picture"]
-            profile.save()
-
-            # Log activity
-            ActivityLog.objects.create(
-                user=request.user,
-                activity_type="profile_picture_upload",
-                description="Profile picture uploaded",
-            )
-
-            return Response(
-                {
-                    "success": True,
-                    "message": "Profile picture uploaded successfully",
-                    "data": {
-                        "picture_url": (
-                            profile.profile_picture.url
-                            if profile.profile_picture
-                            else None
-                        )
-                    },
-                }
-            )
-
-        except UserProfile.DoesNotExist:
-            return Response(
-                {"success": False, "message": "Profile not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        except Exception as e:
-            logger.error(f"Picture upload failed: {str(e)}")
-            return Response(
-                {"success": False, "message": "Picture upload failed", "error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-    @action(detail=False, methods=["post"])
-    def send_otp(self, request):
-        """Send OTP to phone number for verification."""
-        try:
-            phone_number = request.data.get("phone_number")
-
-            if not phone_number:
-                return Response(
-                    {"success": False, "message": "Phone number is required"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            # Send OTP
-            if send_otp(phone_number):
-                return Response({"success": True, "message": "OTP sent successfully"})
-
-            return Response(
-                {"success": False, "message": "Failed to send OTP"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-        except Exception as e:
-            logger.error(f"OTP send failed: {str(e)}")
-            return Response(
-                {"success": False, "message": "OTP send failed", "error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-    @action(detail=False, methods=["post"])
-    def verify_phone(self, request):
-        """Verify phone number with OTP."""
-        try:
-            phone_number = request.data.get("phone_number")
-            otp = request.data.get("otp")
-
-            if not phone_number or not otp:
-                return Response(
-                    {"success": False, "message": "Phone number and OTP are required"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            if verify_otp(phone_number, otp):
-                profile = UserProfile.objects.get(user=request.user)
-                profile.phone_verified = True
-                profile.save()
-
-                # Log activity
-                ActivityLog.objects.create(
-                    user=request.user,
-                    activity_type="phone_verification",
-                    description="Phone number verified",
-                    metadata={"phone_number": phone_number},
-                )
-
-                return Response(
-                    {"success": True, "message": "Phone number verified successfully"}
-                )
-
-            return Response(
-                {"success": False, "message": "Invalid OTP"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        except UserProfile.DoesNotExist:
-            return Response(
-                {"success": False, "message": "Profile not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        except Exception as e:
-            logger.error(f"Phone verification failed: {str(e)}")
-            return Response(
-                {
-                    "success": False,
-                    "message": "Phone verification failed",
-                    "error": str(e),
-                },
+                {"success": False, "message": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
     @action(detail=False, methods=["get"])
     def completion_status(self, request):
-        """Get profile completion status."""
+        """Get profile completion status"""
         try:
-            profile = UserProfile.objects.get(user=request.user)
+            user, error = self.get_user_from_token(request)
+            if error:
+                return Response(error, status=status.HTTP_401_UNAUTHORIZED)
+
+            if not user.profile:
+                return Response(
+                    {
+                        "success": True,
+                        "data": {
+                            "completion_percentage": 0.0,
+                            "completed_fields": 0,
+                            "total_fields": 8,
+                            "missing_fields": [
+                                "phone_number",
+                                "user_type",
+                                "language",
+                                "address_line1",
+                                "village",
+                                "district",
+                                "state",
+                                "pincode",
+                            ],
+                        },
+                    }
+                )
 
             required_fields = [
                 "phone_number",
-                "date_of_birth",
-                "gender",
+                "user_type",
+                "language",
                 "address_line1",
                 "village",
                 "district",
                 "state",
                 "pincode",
-                "farm_size",
-                "farming_experience",
-                "education_level",
             ]
 
-            completed = sum(1 for field in required_fields if getattr(profile, field))
+            completed = sum(
+                1 for field in required_fields if getattr(user.profile, field, None)
+            )
             completion_percentage = (completed / len(required_fields)) * 100
             missing_fields = [
-                field for field in required_fields if not getattr(profile, field)
+                field
+                for field in required_fields
+                if not getattr(user.profile, field, None)
             ]
 
             return Response(
@@ -749,838 +693,540 @@ class UserProfileViewSet(viewsets.ModelViewSet):
                     },
                 }
             )
-
-        except UserProfile.DoesNotExist:
-            return Response(
-                {"success": False, "message": "Profile not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-
-class SubscriptionViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for subscription management.
-
-    Handles subscription CRUD operations and payment processing.
-    """
-
-    serializer_class = SubscriptionSerializer
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication, TokenAuthentication]
-
-    def get_queryset(self):
-        """Return user's subscriptions."""
-        return Subscription.objects.filter(user=self.request.user)
-
-    @action(detail=False, methods=["get"])
-    def current(self, request):
-        """Get current active subscription."""
-        try:
-            subscription = Subscription.objects.filter(
-                user=request.user, is_active=True, end_date__gte=timezone.now().date()
-            ).first()
-
-            if subscription:
-                serializer = self.get_serializer(subscription)
-                return Response({"success": True, "data": serializer.data})
-
-            return Response(
-                {
-                    "success": True,
-                    "message": "No active subscription",
-                    "data": {"plan_type": "free"},
-                }
-            )
         except Exception as e:
-            logger.error(f"Failed to get current subscription: {str(e)}")
             return Response(
-                {
-                    "success": False,
-                    "message": "Failed to get subscription",
-                    "error": str(e),
-                },
+                {"success": False, "message": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
     @action(detail=False, methods=["post"])
-    @transaction.atomic
-    def upgrade(self, request):
-        """Upgrade subscription plan."""
+    def upload_picture(self, request):
+        """Upload profile picture"""
+        return Response(
+            {"success": False, "message": "Profile picture upload not implemented yet"},
+            status=status.HTTP_501_NOT_IMPLEMENTED,
+        )
+
+    @action(detail=False, methods=["post"])
+    def send_otp(self, request):
+        """Send OTP for phone verification"""
         try:
-            plan_type = request.data.get("plan_type")
-            payment_method = request.data.get("payment_method", "online")
+            user, error = self.get_user_from_token(request)
+            if error:
+                return Response(error, status=status.HTTP_401_UNAUTHORIZED)
 
-            # Validate plan type
-            valid_plans = ["basic", "premium", "enterprise"]
-            if plan_type not in valid_plans:
+            phone_number = request.data.get("phone_number")
+            if not phone_number:
                 return Response(
-                    {
-                        "success": False,
-                        "message": f"Invalid plan type. Must be one of: {', '.join(valid_plans)}",
-                    },
+                    {"success": False, "message": "Phone number is required"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Calculate subscription details
-            subscription_details = self._calculate_subscription_details(plan_type)
+            # Use your OTP logic here
+            if send_otp(phone_number):
+                return Response({"success": True, "message": "OTP sent successfully"})
 
-            # Process payment (placeholder - integrate with actual payment gateway)
-            payment_result = self._process_payment(
-                request.user, subscription_details, payment_method
-            )
-
-            if not payment_result["success"]:
-                return Response(
-                    {
-                        "success": False,
-                        "message": "Payment failed",
-                        "error": payment_result["error"],
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            # Deactivate old subscriptions
-            Subscription.objects.filter(user=request.user, is_active=True).update(
-                is_active=False
-            )
-
-            # Create new subscription
-            subscription = Subscription.objects.create(
-                user=request.user,
-                plan_type=plan_type,
-                start_date=timezone.now().date(),
-                end_date=subscription_details["end_date"],
-                price=subscription_details["price"],
-                payment_id=payment_result["payment_id"],
-                payment_method=payment_method,
-                is_active=True,
-            )
-
-            # Send notification
-            Notification.objects.create(
-                user=request.user,
-                notification_type="success",
-                title="Subscription Upgraded",
-                message=f"Your subscription has been upgraded to {plan_type.title()} plan",
-            )
-
-            # Log activity
-            ActivityLog.objects.create(
-                user=request.user,
-                activity_type="subscription_upgrade",
-                description=f"Upgraded to {plan_type} plan",
-                metadata={
-                    "plan_type": plan_type,
-                    "payment_id": payment_result["payment_id"],
-                },
-            )
-
-            serializer = self.get_serializer(subscription)
             return Response(
-                {
-                    "success": True,
-                    "message": f"Successfully upgraded to {plan_type.title()} plan",
-                    "data": serializer.data,
-                }
+                {"success": False, "message": "Failed to send OTP"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-
         except Exception as e:
-            logger.error(f"Subscription upgrade failed: {str(e)}")
             return Response(
-                {
-                    "success": False,
-                    "message": "Subscription upgrade failed",
-                    "error": str(e),
-                },
+                {"success": False, "message": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    def _calculate_subscription_details(self, plan_type):
-        """Calculate subscription details based on plan type."""
-        plans = {
-            "basic": {"days": 30, "price": 99},
-            "premium": {"days": 90, "price": 249},
-            "enterprise": {"days": 365, "price": 999},
-        }
-
-        plan = plans[plan_type]
-        return {
-            "end_date": timezone.now().date() + timedelta(days=plan["days"]),
-            "price": plan["price"],
-        }
-
-    def _process_payment(self, user, subscription_details, payment_method):
-        """Process payment (placeholder for actual payment gateway integration)."""
+    @action(detail=False, methods=["post"])
+    def verify_phone(self, request):
+        """Verify phone number with OTP"""
         try:
-            # This would integrate with actual payment gateway
-            payment_id = f"PAY_{secrets.token_hex(8).upper()}"
+            user, error = self.get_user_from_token(request)
+            if error:
+                return Response(error, status=status.HTTP_401_UNAUTHORIZED)
 
-            # Simulate payment processing
-            return {
-                "success": True,
-                "payment_id": payment_id,
-                "transaction_id": f"TXN_{secrets.token_hex(6).upper()}",
-            }
-        except Exception as e:
-            return {"success": False, "error": str(e)}
+            phone_number = request.data.get("phone_number")
+            otp = request.data.get("otp")
 
-    @action(detail=True, methods=["post"])
-    def cancel(self, request, pk=None):
-        """Cancel subscription."""
-        try:
-            subscription = self.get_object()
-            subscription.is_active = False
-            subscription.auto_renew = False
-            subscription.save()
+            if not phone_number or not otp:
+                return Response(
+                    {"success": False, "message": "Phone number and OTP are required"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-            # Log activity
-            ActivityLog.objects.create(
-                user=request.user,
-                activity_type="subscription_cancel",
-                description=f"Cancelled {subscription.plan_type} subscription",
-            )
+            if verify_otp(phone_number, otp):
+                # Update MongoDB profile
+                if not user.profile:
+                    user.profile = MongoUserProfile(created_at=timezone.now())
+
+                user.profile.phone_verified = True
+                user.profile.updated_at = timezone.now()
+                user.save()
+
+                return Response(
+                    {"success": True, "message": "Phone number verified successfully"}
+                )
 
             return Response(
-                {"success": True, "message": "Subscription cancelled successfully"}
+                {"success": False, "message": "Invalid OTP"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
-            logger.error(f"Subscription cancel failed: {str(e)}")
             return Response(
-                {
-                    "success": False,
-                    "message": "Failed to cancel subscription",
-                    "error": str(e),
-                },
+                {"success": False, "message": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
 
-class ActivityLogViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    ViewSet for activity logs.
-
-    Provides read-only access to user activity logs with filtering and summary.
-    """
+class ActivityLogViewSet(viewsets.ReadOnlyModelViewSet, TokenAuthenticationMixin):
+    """Activity logs ViewSet - MongoDB version"""
 
     serializer_class = ActivityLogSerializer
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication, TokenAuthentication]
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
-        """Return filtered activity logs."""
-        queryset = ActivityLog.objects.filter(user=self.request.user)
+        """Return empty queryset"""
+        return ActivityLog.objects.none()
 
-        # Filter by activity type
-        activity_type = self.request.query_params.get("activity_type")
-        if activity_type:
-            queryset = queryset.filter(activity_type=activity_type)
+    def list(self, request):
+        """List activity logs from MongoDB"""
+        try:
+            user, error = self.get_user_from_token(request)
+            if error:
+                return Response(error, status=status.HTTP_401_UNAUTHORIZED)
 
-        # Filter by date range
-        days = int(self.request.query_params.get("days", 30))
-        start_date = timezone.now() - timedelta(days=days)
-        queryset = queryset.filter(created_at__gte=start_date)
+            activities = MongoActivityLog.objects(user_id=str(user.id)).order_by(
+                "-created_at"
+            )[:50]
 
-        return queryset.order_by("-created_at")[:100]  # Limit to last 100
+            data = []
+            for activity in activities:
+                data.append(
+                    {
+                        "id": str(activity.id),
+                        "activity_type": activity.activity_type,
+                        "description": activity.description,
+                        "created_at": activity.created_at,
+                        "ip_address": activity.ip_address,
+                    }
+                )
+
+            return Response({"success": True, "data": data})
+        except Exception as e:
+            return Response(
+                {"success": False, "message": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     @action(detail=False, methods=["get"])
     def summary(self, request):
-        """Get activity summary statistics."""
+        """Get activity summary"""
         try:
+            user, error = self.get_user_from_token(request)
+            if error:
+                return Response(error, status=status.HTTP_401_UNAUTHORIZED)
+
             days = int(request.query_params.get("days", 30))
             start_date = timezone.now() - timedelta(days=days)
 
-            activities = self.get_queryset().filter(created_at__gte=start_date)
-
-            # Group by activity type
-            summary = (
-                activities.values("activity_type")
-                .annotate(count=Count("id"))
-                .order_by("-count")
+            activities = MongoActivityLog.objects(
+                user_id=str(user.id), created_at__gte=start_date
             )
+
+            activity_types = {}
+            for activity in activities:
+                activity_type = activity.activity_type
+                activity_types[activity_type] = activity_types.get(activity_type, 0) + 1
+
+            summary = [
+                {"activity_type": k, "count": v} for k, v in activity_types.items()
+            ]
+            summary.sort(key=lambda x: x["count"], reverse=True)
 
             return Response(
                 {
                     "success": True,
                     "data": {
                         "period_days": days,
-                        "total_activities": activities.count(),
+                        "total_activities": len(activities),
                         "summary": summary,
                     },
                 }
             )
         except Exception as e:
-            logger.error(f"Activity summary failed: {str(e)}")
             return Response(
-                {
-                    "success": False,
-                    "message": "Failed to get activity summary",
-                    "error": str(e),
-                },
+                {"success": False, "message": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
 
-class NotificationViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for notifications.
-
-    Manages user notifications with read/unread status and cleanup operations.
-    """
+class NotificationViewSet(viewsets.ModelViewSet, TokenAuthenticationMixin):
+    """Notifications ViewSet - MongoDB version"""
 
     serializer_class = NotificationSerializer
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication, TokenAuthentication]
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
-        """Return user's notifications."""
-        return Notification.objects.filter(user=self.request.user).order_by(
-            "-created_at"
-        )
+        """Return empty queryset"""
+        return Notification.objects.none()
+
+    def list(self, request):
+        """List notifications from MongoDB"""
+        try:
+            user, error = self.get_user_from_token(request)
+            if error:
+                return Response(error, status=status.HTTP_401_UNAUTHORIZED)
+
+            notifications = MongoNotification.objects(user_id=str(user.id)).order_by(
+                "-created_at"
+            )[:50]
+
+            data = []
+            for notification in notifications:
+                data.append(
+                    {
+                        "id": str(notification.id),
+                        "notification_type": notification.notification_type,
+                        "title": notification.title,
+                        "message": notification.message,
+                        "is_read": notification.is_read,
+                        "created_at": notification.created_at,
+                    }
+                )
+
+            return Response({"success": True, "data": data})
+        except Exception as e:
+            return Response(
+                {"success": False, "message": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     @action(detail=False, methods=["get"])
     def unread(self, request):
-        """Get unread notifications."""
+        """Get unread notifications"""
         try:
-            notifications = self.get_queryset().filter(is_read=False)
-            serializer = self.get_serializer(notifications, many=True)
+            user, error = self.get_user_from_token(request)
+            if error:
+                return Response(error, status=status.HTTP_401_UNAUTHORIZED)
+
+            notifications = MongoNotification.objects(
+                user_id=str(user.id), is_read=False
+            ).order_by("-created_at")
+
+            data = []
+            for notification in notifications:
+                data.append(
+                    {
+                        "id": str(notification.id),
+                        "notification_type": notification.notification_type,
+                        "title": notification.title,
+                        "message": notification.message,
+                        "created_at": notification.created_at,
+                    }
+                )
 
             return Response(
                 {
                     "success": True,
                     "data": {
-                        "count": notifications.count(),
-                        "notifications": serializer.data,
+                        "count": len(notifications),
+                        "notifications": data,
                     },
                 }
             )
         except Exception as e:
-            logger.error(f"Failed to get unread notifications: {str(e)}")
             return Response(
-                {
-                    "success": False,
-                    "message": "Failed to get notifications",
-                    "error": str(e),
-                },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-    @action(detail=True, methods=["post"])
-    def mark_read(self, request, pk=None):
-        """Mark notification as read."""
-        try:
-            notification = self.get_object()
-            notification.is_read = True
-            notification.read_at = timezone.now()
-            notification.save()
-
-            return Response({"success": True, "message": "Notification marked as read"})
-        except Exception as e:
-            logger.error(f"Failed to mark notification as read: {str(e)}")
-            return Response(
-                {
-                    "success": False,
-                    "message": "Failed to mark notification as read",
-                    "error": str(e),
-                },
+                {"success": False, "message": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
     @action(detail=False, methods=["post"])
     def mark_all_read(self, request):
-        """Mark all notifications as read."""
+        """Mark all notifications as read"""
         try:
-            updated_count = (
-                self.get_queryset()
-                .filter(is_read=False)
-                .update(is_read=True, read_at=timezone.now())
+            user, error = self.get_user_from_token(request)
+            if error:
+                return Response(error, status=status.HTTP_401_UNAUTHORIZED)
+
+            notifications = MongoNotification.objects(
+                user_id=str(user.id), is_read=False
             )
+
+            count = 0
+            for notification in notifications:
+                notification.is_read = True
+                notification.read_at = timezone.now()
+                notification.save()
+                count += 1
 
             return Response(
                 {
                     "success": True,
-                    "message": f"{updated_count} notifications marked as read",
+                    "message": f"{count} notifications marked as read",
                 }
             )
         except Exception as e:
-            logger.error(f"Failed to mark all notifications as read: {str(e)}")
             return Response(
-                {
-                    "success": False,
-                    "message": "Failed to mark notifications as read",
-                    "error": str(e),
-                },
+                {"success": False, "message": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
     @action(detail=False, methods=["delete"])
     def clear_old(self, request):
-        """Clear old notifications (older than 30 days)."""
+        """Clear old notifications"""
         try:
+            user, error = self.get_user_from_token(request)
+            if error:
+                return Response(error, status=status.HTTP_401_UNAUTHORIZED)
+
             days = int(request.query_params.get("days", 30))
             cutoff_date = timezone.now() - timedelta(days=days)
 
-            deleted_count = (
-                self.get_queryset().filter(created_at__lt=cutoff_date).delete()[0]
+            old_notifications = MongoNotification.objects(
+                user_id=str(user.id), created_at__lt=cutoff_date
             )
+
+            count = len(old_notifications)
+            old_notifications.delete()
 
             return Response(
                 {
                     "success": True,
-                    "message": f"{deleted_count} old notifications cleared",
+                    "message": f"{count} old notifications cleared",
                 }
             )
         except Exception as e:
-            logger.error(f"Failed to clear old notifications: {str(e)}")
             return Response(
-                {
-                    "success": False,
-                    "message": "Failed to clear old notifications",
-                    "error": str(e),
-                },
+                {"success": False, "message": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
 
-class FeedbackViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for feedback management.
-
-    Handles user feedback/support tickets with resolution and rating system.
-    """
+class FeedbackViewSet(viewsets.ModelViewSet, TokenAuthenticationMixin):
+    """Feedback ViewSet - MongoDB version"""
 
     serializer_class = FeedbackSerializer
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication, TokenAuthentication]
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
-        """Return feedback based on user permissions."""
-        if self.request.user.is_staff:
-            return Feedback.objects.all().order_by("-created_at")
-        return Feedback.objects.filter(user=self.request.user).order_by("-created_at")
+        """Return empty queryset"""
+        return Feedback.objects.none()
 
-    def perform_create(self, serializer):
-        """Create feedback and notify admins."""
+    def list(self, request):
+        """List feedback from MongoDB"""
         try:
-            feedback = serializer.save(user=self.request.user)
+            user, error = self.get_user_from_token(request)
+            if error:
+                return Response(error, status=status.HTTP_401_UNAUTHORIZED)
 
-            # Notify staff users about new feedback
-            staff_users = User.objects.filter(is_staff=True)
-            for admin in staff_users:
-                Notification.objects.create(
-                    user=admin,
-                    notification_type="info",
-                    title="New Feedback Received",
-                    message=f"New {feedback.feedback_type} from {self.request.user.username}",
+            feedbacks = MongoFeedback.objects(user_id=str(user.id)).order_by(
+                "-created_at"
+            )
+
+            data = []
+            for feedback in feedbacks:
+                data.append(
+                    {
+                        "id": str(feedback.id),
+                        "ticket_id": str(feedback.ticket_id),
+                        "feedback_type": feedback.feedback_type,
+                        "subject": feedback.subject,
+                        "description": feedback.description,
+                        "status": feedback.status,
+                        "created_at": feedback.created_at,
+                    }
                 )
 
-            # Log activity
-            ActivityLog.objects.create(
-                user=self.request.user,
-                activity_type="feedback_submitted",
-                description=f"Submitted {feedback.feedback_type}",
-                metadata={"feedback_id": str(feedback.ticket_id)},
-            )
-
+            return Response({"success": True, "data": data})
         except Exception as e:
-            logger.error(f"Failed to create feedback: {str(e)}")
-            raise
-
-    @action(detail=True, methods=["post"])
-    def resolve(self, request, pk=None):
-        """Resolve feedback (staff only)."""
-        if not request.user.is_staff:
             return Response(
-                {
-                    "success": False,
-                    "message": "Permission denied. Only staff can resolve feedback.",
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        try:
-            feedback = self.get_object()
-            resolution = request.data.get("resolution")
-
-            if not resolution:
-                return Response(
-                    {"success": False, "message": "Resolution text is required"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            feedback.status = "resolved"
-            feedback.resolution = resolution
-            feedback.resolved_at = timezone.now()
-            feedback.assigned_to = request.user
-            feedback.save()
-
-            # Notify user
-            Notification.objects.create(
-                user=feedback.user,
-                notification_type="success",
-                title="Feedback Resolved",
-                message=f"Your {feedback.feedback_type} has been resolved",
-            )
-
-            return Response(
-                {"success": True, "message": "Feedback resolved successfully"}
-            )
-
-        except Exception as e:
-            logger.error(f"Failed to resolve feedback: {str(e)}")
-            return Response(
-                {
-                    "success": False,
-                    "message": "Failed to resolve feedback",
-                    "error": str(e),
-                },
+                {"success": False, "message": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    @action(detail=True, methods=["post"])
-    def rate(self, request, pk=None):
-        """Rate resolved feedback."""
+    def create(self, request):
+        """Create feedback"""
         try:
-            feedback = self.get_object()
+            user, error = self.get_user_from_token(request)
+            if error:
+                return Response(error, status=status.HTTP_401_UNAUTHORIZED)
 
-            if feedback.user != request.user:
-                return Response(
-                    {
-                        "success": False,
-                        "message": "You can only rate your own feedback",
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+            import uuid
 
-            if feedback.status != "resolved":
-                return Response(
-                    {
-                        "success": False,
-                        "message": "Only resolved feedback can be rated",
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            rating = request.data.get("rating")
-            if not rating or not isinstance(rating, int) or rating not in range(1, 6):
-                return Response(
-                    {
-                        "success": False,
-                        "message": "Rating must be an integer between 1 and 5",
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            feedback.rating = rating
+            feedback = MongoFeedback(
+                user_id=str(user.id),
+                ticket_id=uuid.uuid4(),
+                feedback_type=request.data.get("feedback_type"),
+                subject=request.data.get("subject"),
+                description=request.data.get("description"),
+                status="open",
+                created_at=timezone.now(),
+            )
             feedback.save()
 
-            return Response({"success": True, "message": "Thank you for your rating!"})
-
-        except Exception as e:
-            logger.error(f"Failed to rate feedback: {str(e)}")
             return Response(
                 {
-                    "success": False,
-                    "message": "Failed to rate feedback",
-                    "error": str(e),
-                },
+                    "success": True,
+                    "message": "Feedback submitted successfully",
+                    "data": {"ticket_id": str(feedback.ticket_id)},
+                }
+            )
+        except Exception as e:
+            return Response(
+                {"success": False, "message": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+class SubscriptionViewSet(viewsets.ModelViewSet):
+    """Legacy subscription ViewSet - placeholder"""
+
+    serializer_class = SubscriptionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Subscription.objects.none()
+
+    def list(self, request):
+        return Response(
+            {
+                "success": True,
+                "data": [],
+                "message": "Subscriptions not implemented yet",
+            }
+        )
+
+    @action(detail=False, methods=["get"])
+    def current(self, request):
+        """Get current subscription"""
+        return Response(
+            {
+                "success": True,
+                "data": {"plan_type": "free"},
+                "message": "No active subscription",
+            }
+        )
+
+    @action(detail=False, methods=["post"])
+    def upgrade(self, request):
+        """Upgrade subscription"""
+        return Response(
+            {"success": False, "message": "Subscription upgrade not implemented yet"},
+            status=status.HTTP_501_NOT_IMPLEMENTED,
+        )
 
 
 class ApiKeyViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for API key management.
-
-    Allows users to manage their API keys for external integrations.
-    """
+    """Legacy API key ViewSet - placeholder"""
 
     serializer_class = ApiKeySerializer
     permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication, TokenAuthentication]
 
     def get_queryset(self):
-        """Return user's API keys."""
-        return ApiKey.objects.filter(user=self.request.user)
+        return ApiKey.objects.none()
 
-    def perform_create(self, serializer):
-        """Create API key with generated key and secret."""
-        try:
-            key = secrets.token_urlsafe(32)
-            secret = secrets.token_urlsafe(32)
-
-            api_key = serializer.save(user=self.request.user, key=key, secret=secret)
-
-            # Log activity
-            ActivityLog.objects.create(
-                user=self.request.user,
-                activity_type="api_key_created",
-                description="Created new API key",
-                metadata={"api_key_name": api_key.name},
-            )
-
-        except Exception as e:
-            logger.error(f"Failed to create API key: {str(e)}")
-            raise
-
-    @action(detail=True, methods=["post"])
-    def regenerate(self, request, pk=None):
-        """Regenerate API key."""
-        try:
-            api_key = self.get_object()
-
-            # Generate new key and secret
-            api_key.key = secrets.token_urlsafe(32)
-            api_key.secret = secrets.token_urlsafe(32)
-            api_key.save()
-
-            # Log activity
-            ActivityLog.objects.create(
-                user=request.user,
-                activity_type="api_key_regenerated",
-                description=f"Regenerated API key: {api_key.name}",
-            )
-
-            serializer = self.get_serializer(api_key)
-            return Response(
-                {
-                    "success": True,
-                    "message": "API key regenerated successfully",
-                    "data": serializer.data,
-                }
-            )
-
-        except Exception as e:
-            logger.error(f"Failed to regenerate API key: {str(e)}")
-            return Response(
-                {
-                    "success": False,
-                    "message": "Failed to regenerate API key",
-                    "error": str(e),
-                },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-    @action(detail=True, methods=["post"])
-    def toggle(self, request, pk=None):
-        """Toggle API key active status."""
-        try:
-            api_key = self.get_object()
-            api_key.is_active = not api_key.is_active
-            api_key.save()
-
-            action = "activated" if api_key.is_active else "deactivated"
-
-            # Log activity
-            ActivityLog.objects.create(
-                user=request.user,
-                activity_type=f"api_key_{action}",
-                description=f"{action.title()} API key: {api_key.name}",
-            )
-
-            return Response(
-                {
-                    "success": True,
-                    "message": f"API key {action} successfully",
-                    "data": {"is_active": api_key.is_active},
-                }
-            )
-
-        except Exception as e:
-            logger.error(f"Failed to toggle API key: {str(e)}")
-            return Response(
-                {
-                    "success": False,
-                    "message": "Failed to toggle API key",
-                    "error": str(e),
-                },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+    def list(self, request):
+        return Response(
+            {"success": True, "data": [], "message": "API keys not implemented yet"}
+        )
 
 
-class UserDashboardView(generics.RetrieveAPIView):
-    """
-    User dashboard endpoint.
+# Dashboard and Statistics Views
+class UserDashboardView(generics.RetrieveAPIView, TokenAuthenticationMixin):
+    """User dashboard - MongoDB version"""
 
-    Provides comprehensive dashboard data including profile completion,
-    subscription status, notifications, activities, and quick stats.
-    """
-
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication, TokenAuthentication]
+    permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
-        """Get dashboard data for authenticated user."""
+        """Get dashboard data"""
         try:
-            user = request.user
-
-            # Get or create profile
-            profile, created = UserProfile.objects.get_or_create(user=user)
+            user, error = self.get_user_from_token(request)
+            if error:
+                return Response(error, status=status.HTTP_401_UNAUTHORIZED)
 
             # Calculate profile completion
-            profile_completion = self._calculate_profile_completion(profile)
-
-            # Get active subscription
-            active_subscription = Subscription.objects.filter(
-                user=user, is_active=True, end_date__gte=timezone.now().date()
-            ).first()
-
-            # Get unread notifications count
-            unread_notifications = Notification.objects.filter(
-                user=user, is_read=False
-            ).count()
-
-            # Get recent activities
-            recent_activities = ActivityLog.objects.filter(user=user).order_by(
-                "-created_at"
-            )[:5]
-
-            # Get pending feedbacks count
-            pending_feedbacks = Feedback.objects.filter(
-                user=user, status__in=["open", "in_progress"]
-            ).count()
-
-            # Get quick stats (placeholder for integration with other apps)
-            quick_stats = self._get_quick_stats(user)
+            profile_completion = 0.0
+            if user.profile:
+                required_fields = [
+                    "phone_number",
+                    "user_type",
+                    "language",
+                    "address_line1",
+                ]
+                completed = sum(
+                    1 for field in required_fields if getattr(user.profile, field, None)
+                )
+                profile_completion = (completed / len(required_fields)) * 100
 
             dashboard_data = {
                 "user_info": {
-                    "id": user.id,
+                    "id": str(user.id),
                     "username": user.username,
                     "full_name": f"{user.first_name} {user.last_name}".strip()
                     or user.username,
                     "email": user.email,
-                    "date_joined": user.date_joined,
-                    "last_login": user.last_login,
                 },
-                "profile_completion": profile_completion,
-                "active_subscription": (
-                    SubscriptionSerializer(active_subscription).data
-                    if active_subscription
-                    else None
+                "profile_completion": round(profile_completion, 2),
+                "unread_notifications": len(
+                    MongoNotification.objects(user_id=str(user.id), is_read=False)
                 ),
-                "unread_notifications": unread_notifications,
-                "recent_activities": ActivityLogSerializer(
-                    recent_activities, many=True
-                ).data,
-                "pending_feedbacks": pending_feedbacks,
-                "quick_stats": quick_stats,
+                "recent_activities": [
+                    {
+                        "activity_type": activity.activity_type,
+                        "description": activity.description,
+                        "created_at": activity.created_at,
+                    }
+                    for activity in MongoActivityLog.objects(
+                        user_id=str(user.id)
+                    ).order_by("-created_at")[:5]
+                ],
             }
 
             return Response({"success": True, "data": dashboard_data})
-
         except Exception as e:
-            logger.error(f"Dashboard data fetch failed: {str(e)}")
             return Response(
-                {
-                    "success": False,
-                    "message": "Failed to fetch dashboard data",
-                    "error": str(e),
-                },
+                {"success": False, "message": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    def _calculate_profile_completion(self, profile):
-        """Calculate profile completion percentage."""
-        required_fields = [
-            "phone_number",
-            "date_of_birth",
-            "gender",
-            "address_line1",
-            "village",
-            "district",
-            "state",
-            "pincode",
-            "farm_size",
-            "farming_experience",
-            "education_level",
-        ]
 
-        completed = sum(1 for field in required_fields if getattr(profile, field))
-        return round((completed / len(required_fields)) * 100, 2)
+class UserStatisticsView(generics.RetrieveAPIView, TokenAuthenticationMixin):
+    """User statistics - MongoDB version"""
 
-    def _get_quick_stats(self, user):
-        """Get quick stats for dashboard (placeholder for app integrations)."""
-        # These would be populated by integrating with other apps
-        return {
-            "fields_count": 0,  # From IrrigationAdvisor
-            "active_alerts": 0,  # From Advisory
-            "pending_schedules": 0,  # From IrrigationAdvisor
-            "recent_predictions": 0,  # From CropAnalysis
-        }
-
-
-class UserStatisticsView(generics.RetrieveAPIView):
-    """
-    User statistics endpoint.
-
-    Provides detailed user statistics for activities, notifications, and feedback.
-    """
-
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication, TokenAuthentication]
+    permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
-        """Get user statistics."""
+        """Get user statistics"""
         try:
-            user = request.user
+            user, error = self.get_user_from_token(request)
+            if error:
+                return Response(error, status=status.HTTP_401_UNAUTHORIZED)
+
             days = int(request.query_params.get("days", 30))
             start_date = timezone.now() - timedelta(days=days)
 
-            # Activity statistics
-            activities = ActivityLog.objects.filter(
-                user=user, created_at__gte=start_date
-            )
-            activity_stats = (
-                activities.values("activity_type")
-                .annotate(count=Count("id"))
-                .order_by("-count")
+            activities = MongoActivityLog.objects(
+                user_id=str(user.id), created_at__gte=start_date
             )
 
-            # Login frequency
-            login_count = activities.filter(activity_type="login").count()
-
-            # Notification statistics
-            notifications = Notification.objects.filter(
-                user=user, created_at__gte=start_date
-            )
-            notification_stats = {
-                "total": notifications.count(),
-                "read": notifications.filter(is_read=True).count(),
-                "unread": notifications.filter(is_read=False).count(),
-            }
-
-            # Feedback statistics
-            feedbacks = Feedback.objects.filter(user=user, created_at__gte=start_date)
-            avg_rating = feedbacks.filter(rating__isnull=False).aggregate(
-                avg_rating=Avg("rating")
-            )["avg_rating"]
-
-            feedback_stats = {
-                "total": feedbacks.count(),
-                "resolved": feedbacks.filter(status="resolved").count(),
-                "pending": feedbacks.filter(status__in=["open", "in_progress"]).count(),
-                "average_rating": round(avg_rating, 2) if avg_rating else None,
-            }
+            activity_stats = {}
+            for activity in activities:
+                activity_type = activity.activity_type
+                activity_stats[activity_type] = activity_stats.get(activity_type, 0) + 1
 
             statistics_data = {
                 "period_days": days,
-                "start_date": start_date.date(),
-                "end_date": timezone.now().date(),
-                "activity_statistics": activity_stats,
-                "login_frequency": login_count,
-                "notification_statistics": notification_stats,
-                "feedback_statistics": feedback_stats,
+                "total_activities": len(activities),
+                "activity_statistics": [
+                    {"activity_type": k, "count": v} for k, v in activity_stats.items()
+                ],
             }
 
             return Response({"success": True, "data": statistics_data})
-
         except Exception as e:
-            logger.error(f"Statistics fetch failed: {str(e)}")
             return Response(
-                {
-                    "success": False,
-                    "message": "Failed to fetch statistics",
-                    "error": str(e),
-                },
+                {"success": False, "message": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+print("🔄 MongoDB views loaded successfully with URL compatibility")

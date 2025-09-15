@@ -47,7 +47,7 @@ interface NotificationCenterState {
 
 export function NotificationCenter() {
   const { advisoryService, systemService } = useAPI();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   // State
   const [state, setState] = useState<NotificationCenterState>({
@@ -221,14 +221,14 @@ export function NotificationCenter() {
 
   // Auto-refresh notifications
   useEffect(() => {
-    if (user) {
+    if (isAuthenticated && user) {
       fetchNotifications();
 
       // Refresh every 2 minutes
       const interval = setInterval(fetchNotifications, 2 * 60 * 1000);
       return () => clearInterval(interval);
     }
-  }, [user, fetchNotifications]);
+  }, [isAuthenticated, user, fetchNotifications]);
 
   // Auto-hide notifications
   useEffect(() => {

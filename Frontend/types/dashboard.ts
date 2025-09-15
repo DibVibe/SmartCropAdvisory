@@ -1,3 +1,4 @@
+import { WeatherData, CropData, Alert, MarketData, IrrigationData } from './api'
 export interface DashboardStats {
   total_crops: number;
   healthy_crops: number;
