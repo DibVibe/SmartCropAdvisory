@@ -32,7 +32,7 @@ class WeatherStationViewSet(viewsets.ModelViewSet):
 
     queryset = WeatherStation.objects.all()
     serializer_class = WeatherStationSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     @action(detail=True, methods=["get"])
     def current_weather(self, request, pk=None):
@@ -63,7 +63,7 @@ class WeatherDataViewSet(viewsets.ReadOnlyModelViewSet):
 
     queryset = WeatherData.objects.all()
     serializer_class = WeatherDataSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -90,7 +90,7 @@ class WeatherForecastViewSet(viewsets.ReadOnlyModelViewSet):
 
     queryset = WeatherForecast.objects.all()
     serializer_class = WeatherForecastSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     @action(detail=False, methods=["post"])
     def analyze_for_crop(self, request):
@@ -138,7 +138,7 @@ class WeatherAlertViewSet(viewsets.ReadOnlyModelViewSet):
 
     queryset = WeatherAlert.objects.filter(is_active=True)
     serializer_class = WeatherAlertSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -165,7 +165,7 @@ class CropWeatherRequirementViewSet(viewsets.ModelViewSet):
 
     queryset = CropWeatherRequirement.objects.all()
     serializer_class = CropWeatherRequirementSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     @action(detail=False, methods=["get"])
     def check_suitability(self, request):
@@ -243,7 +243,7 @@ class CropWeatherRequirementViewSet(viewsets.ModelViewSet):
 class WeatherAPIViewSet(viewsets.ViewSet):
     """Direct weather API endpoints"""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     @action(detail=False, methods=["get"])
     def current(self, request):

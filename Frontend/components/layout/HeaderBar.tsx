@@ -26,7 +26,7 @@ type User = {
 };
 
 export function HeaderBar() {
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const { weatherService, systemService } = useAPI();
   const [currentWeather, setCurrentWeather] = useState<WeatherData | null>(
     null
@@ -40,6 +40,7 @@ export function HeaderBar() {
   useEffect(() => {
     const fetchLocationWeather = async () => {
       try {
+        if (!isAuthenticated) return;
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(async (position) => {
             const { latitude, longitude } = position.coords;
@@ -55,12 +56,12 @@ export function HeaderBar() {
       }
     };
 
-    fetchLocationWeather();
+    if (isAuthenticated) fetchLocationWeather();
 
     // Refresh weather every 30 minutes
     const weatherInterval = setInterval(fetchLocationWeather, 30 * 60 * 1000);
     return () => clearInterval(weatherInterval);
-  }, [weatherService]);
+  }, [isAuthenticated, weatherService]);
 
   // Check system status
   useEffect(() => {

@@ -179,7 +179,7 @@ class CropViewSet(mongo_viewsets.ModelViewSet):
 class FieldViewSet(mongo_viewsets.ModelViewSet):
     """ViewSet for Field management with user-specific access"""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
     filterset_fields = ["current_crop", "area"]
     search_fields = ["name", "weather_station_id"]
     ordering_fields = ["name", "created_at", "area"]

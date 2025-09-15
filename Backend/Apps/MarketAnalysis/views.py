@@ -37,7 +37,7 @@ class MarketViewSet(viewsets.ModelViewSet):
 
     queryset = Market.objects.all()
     serializer_class = MarketSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -129,7 +129,7 @@ class CommodityViewSet(viewsets.ModelViewSet):
 
     queryset = Commodity.objects.all()
     serializer_class = CommoditySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -225,7 +225,7 @@ class MarketPriceViewSet(viewsets.ModelViewSet):
 
     queryset = MarketPrice.objects.all()
     serializer_class = MarketPriceSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -309,7 +309,7 @@ class PricePredictionViewSet(viewsets.ReadOnlyModelViewSet):
 
     queryset = PricePrediction.objects.all()
     serializer_class = PricePredictionSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -371,7 +371,7 @@ class MarketTrendViewSet(viewsets.ReadOnlyModelViewSet):
 
     queryset = MarketTrend.objects.all()
     serializer_class = MarketTrendSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     @action(detail=False, methods=["post"])
     def analyze(self, request):
@@ -431,7 +431,7 @@ class FarmerTransactionViewSet(viewsets.ModelViewSet):
     """ViewSet for farmer transactions"""
 
     serializer_class = FarmerTransactionSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     def get_queryset(self):
         return FarmerTransaction.objects.filter(user=self.request.user)
@@ -511,7 +511,7 @@ class MarketAlertViewSet(viewsets.ModelViewSet):
     """ViewSet for market alerts"""
 
     serializer_class = MarketAlertSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     def get_queryset(self):
         return MarketAlert.objects.filter(user=self.request.user)
@@ -605,7 +605,7 @@ class MarketAlertViewSet(viewsets.ModelViewSet):
 class MarketAnalysisViewSet(viewsets.ViewSet):
     """Main market analysis endpoints"""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     @action(detail=False, methods=["get"])
     def opportunities(self, request):

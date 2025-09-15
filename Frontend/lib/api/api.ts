@@ -16,7 +16,7 @@ api.interceptors.request.use(
   (config) => {
     const token = typeof window !== 'undefined' ? localStorage.getItem("authToken") : null;
     if (token) {
-      config.headers.Authorization = `Token ${token}`;
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
@@ -49,7 +49,7 @@ api.interceptors.response.use(
         localStorage.setItem("authToken", access);
 
         // Retry original request
-        originalRequest.headers.Authorization = `Token ${access}`;
+        originalRequest.headers.Authorization = `Bearer ${access}`;
         return api(originalRequest);
       } catch (refreshError) {
         // Refresh failed, redirect to login

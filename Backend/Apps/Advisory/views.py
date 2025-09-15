@@ -41,8 +41,8 @@ class FarmViewSet(viewsets.ModelViewSet):
     """
 
     serializer_class = FarmSerializer
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication, TokenAuthentication]
+    #     permission_classes = []
+    #     authentication_classes = [JWTAuthentication, TokenAuthentication]
 
     def get_queryset(self):
         """Return active farms for the authenticated user."""
@@ -481,8 +481,8 @@ class AdvisorySessionViewSet(viewsets.ReadOnlyModelViewSet):
     """
 
     serializer_class = AdvisorySessionSerializer
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication, TokenAuthentication]
+    #     permission_classes = []
+    #     authentication_classes = [JWTAuthentication, TokenAuthentication]
 
     def get_queryset(self):
         """Return advisory sessions for user's farms."""
@@ -615,8 +615,8 @@ class AdvisoryAlertViewSet(viewsets.ModelViewSet):
     """
 
     serializer_class = AdvisoryAlertSerializer
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication, TokenAuthentication]
+    #     permission_classes = []
+    #     authentication_classes = [JWTAuthentication, TokenAuthentication]
 
     def get_queryset(self):
         """Return alerts for user's farms."""
@@ -853,8 +853,8 @@ class AdvisoryDashboardView(APIView):
     Provides aggregated data from all advisory services for dashboard display.
     """
 
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication, TokenAuthentication]
+    #     permission_classes = []
+    #     authentication_classes = [JWTAuthentication, TokenAuthentication]
 
     def get(self, request):
         """Get comprehensive advisory dashboard data."""
@@ -927,8 +927,8 @@ class AdvisoryStatisticsView(APIView):
     Provides detailed statistics and analytics for advisory services.
     """
 
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication, TokenAuthentication]
+    #     permission_classes = [IsAuthenticated]
+    #     authentication_classes = [JWTAuthentication, TokenAuthentication]
 
     def get(self, request):
         """Get comprehensive advisory statistics."""

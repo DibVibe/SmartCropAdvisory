@@ -34,7 +34,7 @@ class FieldViewSet(viewsets.ModelViewSet):
     """ViewSet for agricultural fields"""
 
     serializer_class = FieldSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     def get_queryset(self):
         return Field.objects.filter(user=self.request.user)
@@ -152,7 +152,7 @@ class SoilMoistureViewSet(viewsets.ModelViewSet):
     """ViewSet for soil moisture readings"""
 
     serializer_class = SoilMoistureSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     def get_queryset(self):
         queryset = SoilMoisture.objects.filter(field__user=self.request.user)
@@ -226,7 +226,7 @@ class IrrigationScheduleViewSet(viewsets.ModelViewSet):
     """ViewSet for irrigation schedules"""
 
     serializer_class = IrrigationScheduleSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     def get_queryset(self):
         queryset = IrrigationSchedule.objects.filter(field__user=self.request.user)
@@ -362,7 +362,7 @@ class IrrigationHistoryViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet for irrigation history"""
 
     serializer_class = IrrigationHistorySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     def get_queryset(self):
         return IrrigationHistory.objects.filter(field__user=self.request.user)
@@ -451,7 +451,7 @@ class WaterSourceViewSet(viewsets.ModelViewSet):
 
     queryset = WaterSource.objects.all()
     serializer_class = WaterSourceSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     @action(detail=True, methods=["post"])
     def update_level(self, request, pk=None):
@@ -524,7 +524,7 @@ class CropWaterRequirementViewSet(viewsets.ModelViewSet):
 
     queryset = CropWaterRequirement.objects.all()
     serializer_class = CropWaterRequirementSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
 
     @action(detail=False, methods=["get"])
     def by_crop(self, request):
