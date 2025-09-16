@@ -575,7 +575,8 @@ backups/
 db_backups/
 
 # Configuration backups
-requirements_backup.txt
+# requirements.txt
+# requirements_backup.txt
 settings_backup.py
 
 # Local development files

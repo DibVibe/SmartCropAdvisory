@@ -428,6 +428,15 @@ venv\Scripts\activate     # Windows
 # Install dependencies
 pip install -r requirements.txt
 
+# Strict clean reinstall (OPTIONAL)
+# NOTE: Use this if you want to delete the venv and reinstall only from requirements.txt...
+
+# MacOS :
+rm -rf venv && python -m venv venv && source venv/bin/activate && pip install -r requirements.txt
+
+# Windows :
+Remove-Item -Recurse -Force venv; python -m venv venv; .\venv\Scripts\activate; pip install -r requirements.txt
+
 # Environment configuration
 cp .env.example .env
 # Edit .env with your API keys and database credentials
