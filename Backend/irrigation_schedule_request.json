@@ -1,0 +1,8 @@
+{
+  "field": 1,
+  "scheduled_date": "2025-09-19",
+  "scheduled_time": "08:00",
+  "irrigation_type": "drip",
+  "duration_minutes": 30,
+  "water_amount": 100
+}

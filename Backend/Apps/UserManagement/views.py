@@ -143,7 +143,16 @@ class UserRegistrationView(CreateAPIView, TokenAuthenticationMixin):
     def create(self, request, *args, **kwargs):
         try:
             serializer = MongoUserRegistrationSerializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
+            
+            if not serializer.is_valid():
+                return Response(
+                    {
+                        "success": False,
+                        "message": "Registration failed",
+                        "errors": serializer.errors
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
             data = serializer.validated_data
 
@@ -245,8 +254,21 @@ class LoginView(generics.GenericAPIView, TokenAuthenticationMixin):
 
     def post(self, request, *args, **kwargs):
         try:
+            logger.info(f"Login attempt for request data: {request.data}")
             serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
+            
+            if not serializer.is_valid():
+                logger.error(f"Login validation failed: {serializer.errors}")
+                return Response(
+                    {
+                        "success": False,
+                        "message": "Login failed - validation errors",
+                        "errors": serializer.errors,
+                        "request_data": request.data
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+                
             user = serializer.validated_data["user"]
 
             # Update last login
@@ -374,6 +396,7 @@ class MongoUserProfileView(APIView, TokenAuthenticationMixin):
                     "bio": user.profile.bio,
                     "farming_type": user.profile.farming_type,
                     "primary_crops": user.profile.primary_crops,
+                    "profile_picture_url": user.profile.profile_picture_url,
                     "created_at": user.profile.created_at,
                     "updated_at": user.profile.updated_at,
                 }
@@ -542,7 +565,7 @@ class ChangePasswordView(APIView, TokenAuthenticationMixin):
                 # Send notification
                 MongoNotification(
                     user_id=str(user.id),
-                    notification_type="security",
+                    notification_type="info",
                     title="Password Changed",
                     message="Your password has been changed successfully.",
                     channel="in_app",
@@ -604,7 +627,25 @@ class UserProfileViewSet(viewsets.ModelViewSet, TokenAuthenticationMixin):
                 "email": user.email,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
-                "profile": user.profile.__dict__ if user.profile else None,
+                "profile": {
+                    "user_type": user.profile.user_type if user.profile else "farmer",
+                    "phone_number": user.profile.phone_number if user.profile else None,
+                    "language": user.profile.language if user.profile else "en",
+                    "phone_verified": user.profile.phone_verified if user.profile else False,
+                    "email_verified": user.profile.email_verified if user.profile else False,
+                    "profile_picture_url": user.profile.profile_picture_url if user.profile else None,
+                    "created_at": user.profile.created_at if user.profile else None,
+                    "updated_at": user.profile.updated_at if user.profile else None,
+                } if user.profile else {
+                    "user_type": "farmer",
+                    "phone_number": None,
+                    "language": "en",
+                    "phone_verified": False,
+                    "email_verified": False,
+                    "profile_picture_url": None,
+                    "created_at": None,
+                    "updated_at": None,
+                },
             }
 
             return Response({"success": True, "data": user_data})
@@ -703,10 +744,92 @@ class UserProfileViewSet(viewsets.ModelViewSet, TokenAuthenticationMixin):
     @action(detail=False, methods=["post"])
     def upload_picture(self, request):
         """Upload profile picture"""
-        return Response(
-            {"success": False, "message": "Profile picture upload not implemented yet"},
-            status=status.HTTP_501_NOT_IMPLEMENTED,
-        )
+        try:
+            user, error = self.get_user_from_token(request)
+            if error:
+                return Response(error, status=status.HTTP_401_UNAUTHORIZED)
+
+            if 'profile_picture' not in request.FILES:
+                return Response(
+                    {"success": False, "message": "No profile picture file provided"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            profile_picture = request.FILES['profile_picture']
+            
+            # Validate file type
+            allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif']
+            if profile_picture.content_type not in allowed_types:
+                return Response(
+                    {"success": False, "message": "Invalid file type. Only JPEG, PNG, and GIF are allowed."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            
+            # Validate file size (max 5MB)
+            if profile_picture.size > 5 * 1024 * 1024:
+                return Response(
+                    {"success": False, "message": "File too large. Maximum size is 5MB."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Generate unique filename
+            import uuid
+            import os
+            from django.conf import settings
+            
+            file_extension = os.path.splitext(profile_picture.name)[1]
+            unique_filename = f"profile_{user.id}_{uuid.uuid4().hex[:8]}{file_extension}"
+            
+            # Create media directory if it doesn't exist
+            media_root = getattr(settings, 'MEDIA_ROOT', 'media')
+            profile_pics_dir = os.path.join(media_root, 'profile_pictures')
+            os.makedirs(profile_pics_dir, exist_ok=True)
+            
+            # Save file
+            file_path = os.path.join(profile_pics_dir, unique_filename)
+            with open(file_path, 'wb+') as destination:
+                for chunk in profile_picture.chunks():
+                    destination.write(chunk)
+            
+            # Update user profile
+            if not user.profile:
+                user.profile = MongoUserProfile(created_at=timezone.now())
+            
+            # Store relative URL for the profile picture
+            profile_picture_url = f"/media/profile_pictures/{unique_filename}"
+            user.profile.profile_picture_url = profile_picture_url
+            user.profile.updated_at = timezone.now()
+            user.save()
+            
+            # Log activity
+            MongoActivityLog(
+                user_id=str(user.id),
+                activity_type="profile_picture_uploaded",
+                description="Profile picture uploaded",
+                ip_address=request.META.get("REMOTE_ADDR"),
+                metadata={"filename": unique_filename},
+                created_at=timezone.now(),
+            ).save()
+            
+            return Response({
+                "success": True,
+                "message": "Profile picture uploaded successfully",
+                "data": {
+                    "profile_picture_url": profile_picture_url,
+                    "filename": unique_filename
+                }
+            })
+            
+        except Exception as e:
+            logger.error(f"Profile picture upload failed: {str(e)}")
+            return Response(
+                {
+                    "success": False,
+                    "message": "Failed to upload profile picture",
+                    "error": str(e),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     @action(detail=False, methods=["post"])
     def send_otp(self, request):

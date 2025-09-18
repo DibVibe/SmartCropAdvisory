@@ -1,5 +1,7 @@
 from rest_framework_mongoengine import serializers
+from rest_framework import serializers as drf_serializers
 from .mongo_models import Crop, Field, DiseaseDetection
+from .models import FarmingTip
 
 
 class BaseDocumentSerializer(serializers.DocumentSerializer):
@@ -112,3 +114,27 @@ class DiseaseDetectionCreateSerializer(BaseDocumentSerializer):
         model = DiseaseDetection
         fields = "__all__"
         read_only_fields = ("detected_at",)
+
+
+# FarmingTip serializers (Django model-based)
+class FarmingTipSerializer(drf_serializers.ModelSerializer):
+    crops_detail = CropSerializer(source="crops", many=True, read_only=True)
+    
+    class Meta:
+        model = FarmingTip
+        fields = "__all__"
+        read_only_fields = ("created_at", "updated_at")
+
+
+class FarmingTipListSerializer(drf_serializers.ModelSerializer):
+    class Meta:
+        model = FarmingTip
+        fields = ("id", "title", "category", "importance", "season", "is_active", "created_at")
+        read_only_fields = ("created_at",)
+
+
+class FarmingTipCreateSerializer(drf_serializers.ModelSerializer):
+    class Meta:
+        model = FarmingTip
+        fields = "__all__"
+        read_only_fields = ("created_at", "updated_at")

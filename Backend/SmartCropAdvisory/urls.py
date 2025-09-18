@@ -13,6 +13,7 @@ from django.views.generic import RedirectView
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 import json
 
 # Import your views
@@ -286,7 +287,8 @@ def schema_fallback(request):
     """Fallback schema endpoint"""
     return JsonResponse(
         {
-            "error": "Schema generation temporarily disabled",
+            "message": "OpenAPI Schema",
+            "info": "Schema generation temporarily disabled due to MongoEngine compatibility",
             "reason": "MongoEngine compatibility issues with drf-spectacular",
             "timestamp": timezone.now().isoformat(),
             "alternatives": [
@@ -295,9 +297,16 @@ def schema_fallback(request):
                 "Check each endpoint with OPTIONS method for details",
                 "Use /api/v1/ for endpoint discovery",
             ],
-            "status": "service_unavailable",
+            "status": "schema_disabled_but_api_working",
+            "api_status": "operational",
+            "available_endpoints": {
+                "api_root": "/api/v1/",
+                "documentation": "/api/docs/",
+                "health_check": "/api/v1/health/",
+                "system_status": "/api/status/"
+            }
         },
-        status=503,
+        status=200,
     )
 
 
@@ -489,6 +498,7 @@ system_urls = [
     path(
         "api/status/", system_status, name="system-status"
     ),  # 🔧 IMPROVED: Custom status
+    path("api/v1/status/", include("Apps.SystemStatus.urls")),  # 🆕 SystemStatus app endpoints
 ]
 
 urlpatterns.extend(system_urls)

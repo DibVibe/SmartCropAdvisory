@@ -607,6 +607,53 @@ class MarketAnalysisViewSet(viewsets.ViewSet):
 
     permission_classes = []
 
+    def list(self, request):
+        """Main market analysis endpoint - provides overview of available analysis endpoints"""
+        base_url = request.build_absolute_uri().rstrip('/')
+        
+        analysis_data = {
+            "market_analysis": "SmartCropAdvisory Market Analysis System",
+            "version": "2.0.0",
+            "timestamp": timezone.now().isoformat(),
+            "description": "Comprehensive market analysis and insights for agricultural commodities",
+            "available_endpoints": {
+                "dashboard": {
+                    "url": f"{base_url}/dashboard/",
+                    "method": "GET",
+                    "description": "Market analysis dashboard with comprehensive data and visualizations",
+                    "auth_required": True
+                },
+                "opportunities": {
+                    "url": f"{base_url}/opportunities/",
+                    "method": "GET",
+                    "description": "Find market opportunities based on location and commodities",
+                    "parameters": ["lat", "lon", "commodities"]
+                },
+                "price_factors": {
+                    "url": f"{base_url}/price_factors/",
+                    "method": "GET", 
+                    "description": "Analyze factors affecting commodity prices",
+                    "parameters": ["commodity", "market"]
+                }
+            },
+            "related_endpoints": {
+                "markets": "/api/v1/market/markets/",
+                "commodities": "/api/v1/market/commodities/", 
+                "prices": "/api/v1/market/prices/",
+                "predictions": "/api/v1/market/predictions/",
+                "trends": "/api/v1/market/trends/",
+                "alerts": "/api/v1/market/alerts/"
+            },
+            "market_summary": {
+                "total_markets": Market.objects.count(),
+                "total_commodities": Commodity.objects.count(),
+                "active_markets": Market.objects.filter(is_active=True).count(),
+                "latest_price_updates": MarketPrice.objects.count()
+            }
+        }
+        
+        return Response(analysis_data)
+
     @action(detail=False, methods=["get"])
     def opportunities(self, request):
         """Find market opportunities"""
@@ -647,47 +694,132 @@ class MarketAnalysisViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["get"])
     def dashboard(self, request):
         """Get market analysis dashboard data"""
-        # Get user's recent commodities
-        recent_transactions = (
-            FarmerTransaction.objects.filter(user=request.user)
-            .values("commodity")
-            .distinct()[:5]
-        )
-
-        commodity_ids = [t["commodity"] for t in recent_transactions]
-
         dashboard_data = {
-            "today_date": timezone.now().date(),
-            "watched_commodities": [],
-            "recent_alerts": [],
-            "market_summary": {},
+            "dashboard": "SmartCropAdvisory Market Analysis Dashboard",
+            "timestamp": timezone.now().isoformat(),
+            "today_date": timezone.now().date().isoformat(),
+            "system_status": "operational",
+            "version": "2.0.0"
         }
-
-        # Get latest prices for watched commodities
-        for commodity_id in commodity_ids:
-            latest_price = (
-                MarketPrice.objects.filter(commodity_id=commodity_id)
-                .order_by("-date")
-                .first()
+        
+        # Market Summary Statistics
+        dashboard_data["market_summary"] = {
+            "total_markets": Market.objects.count(),
+            "active_markets": Market.objects.filter(is_active=True).count(),
+            "total_commodities": Commodity.objects.count(),
+            "total_price_records": MarketPrice.objects.count(),
+            "latest_price_date": MarketPrice.objects.order_by("-date").values_list("date", flat=True).first()
+        }
+        
+        # Top Commodities by Activity
+        top_commodities = (
+            MarketPrice.objects.values("commodity__name", "commodity__category")
+            .annotate(
+                price_count=Count("id"),
+                avg_price=Avg("modal_price"),
+                latest_price=Max("modal_price")
             )
-
-            if latest_price:
-                dashboard_data["watched_commodities"].append(
-                    {
-                        "commodity": latest_price.commodity.name,
-                        "latest_price": latest_price.modal_price,
-                        "trend": latest_price.price_trend,
-                        "date": latest_price.date,
-                    }
+            .order_by("-price_count")[:10]
+        )
+        
+        dashboard_data["top_commodities"] = list(top_commodities)
+        
+        # Recent Price Trends (last 7 days)
+        seven_days_ago = timezone.now().date() - timedelta(days=7)
+        recent_prices = (
+            MarketPrice.objects.filter(date__gte=seven_days_ago)
+            .select_related("commodity", "market")
+            .order_by("-date")[:50]
+        )
+        
+        dashboard_data["recent_price_updates"] = [
+            {
+                "commodity": price.commodity.name,
+                "market": price.market.name,
+                "modal_price": float(price.modal_price),
+                "trend": price.price_trend,
+                "date": price.date.isoformat(),
+                "location": f"{price.market.district}, {price.market.state}"
+            }
+            for price in recent_prices
+        ]
+        
+        # Market Performance Metrics
+        dashboard_data["performance_metrics"] = {
+            "daily_updates": MarketPrice.objects.filter(
+                date=timezone.now().date()
+            ).count(),
+            "weekly_updates": MarketPrice.objects.filter(
+                date__gte=seven_days_ago
+            ).count(),
+            "trend_distribution": {
+                "rising": MarketPrice.objects.filter(price_trend="up").count(),
+                "falling": MarketPrice.objects.filter(price_trend="down").count(),
+                "stable": MarketPrice.objects.filter(price_trend="stable").count()
+            }
+        }
+        
+        # Price Volatility Analysis
+        price_stats = MarketPrice.objects.aggregate(
+            avg_modal=Avg("modal_price"),
+            min_modal=Min("modal_price"),
+            max_modal=Max("modal_price")
+        )
+        
+        dashboard_data["price_volatility"] = {
+            "average_price": round(float(price_stats["avg_modal"] or 0), 2),
+            "lowest_price": float(price_stats["min_modal"] or 0),
+            "highest_price": float(price_stats["max_modal"] or 0),
+            "price_range": float((price_stats["max_modal"] or 0) - (price_stats["min_modal"] or 0))
+        }
+        
+        # User-specific data (if authenticated)
+        if hasattr(request, 'user') and request.user.is_authenticated:
+            # Get user's recent commodities
+            recent_transactions = (
+                FarmerTransaction.objects.filter(user=request.user)
+                .values("commodity")
+                .distinct()[:5]
+            )
+            
+            commodity_ids = [t["commodity"] for t in recent_transactions]
+            
+            dashboard_data["user_data"] = {
+                "watched_commodities": [],
+                "recent_alerts": [],
+                "transaction_summary": FarmerTransaction.objects.filter(user=request.user).count()
+            }
+            
+            # Get latest prices for watched commodities
+            for commodity_id in commodity_ids:
+                latest_price = (
+                    MarketPrice.objects.filter(commodity_id=commodity_id)
+                    .order_by("-date")
+                    .first()
                 )
-
-        # Get recent triggered alerts
-        recent_alerts = MarketAlert.objects.filter(
-            user=request.user, last_triggered__isnull=False
-        ).order_by("-last_triggered")[:5]
-
-        dashboard_data["recent_alerts"] = MarketAlertSerializer(
-            recent_alerts, many=True
-        ).data
-
+                
+                if latest_price:
+                    dashboard_data["user_data"]["watched_commodities"].append(
+                        {
+                            "commodity": latest_price.commodity.name,
+                            "latest_price": float(latest_price.modal_price),
+                            "trend": latest_price.price_trend,
+                            "date": latest_price.date.isoformat(),
+                        }
+                    )
+            
+            # Get recent triggered alerts
+            recent_alerts = MarketAlert.objects.filter(
+                user=request.user, last_triggered__isnull=False
+            ).order_by("-last_triggered")[:5]
+            
+            dashboard_data["user_data"]["recent_alerts"] = MarketAlertSerializer(
+                recent_alerts, many=True
+            ).data
+        else:
+            dashboard_data["user_data"] = {
+                "message": "Login required for personalized data",
+                "login_endpoint": "/api/v1/users/login/"
+            }
+        
         return Response(dashboard_data)

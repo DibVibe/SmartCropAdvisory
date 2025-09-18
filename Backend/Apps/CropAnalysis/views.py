@@ -8,6 +8,7 @@ from drf_spectacular.openapi import OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 
 from .mongo_models import Crop, Field, DiseaseDetection
+from .models import FarmingTip
 from .serializers import (
     CropSerializer,
     CropListSerializer,
@@ -18,6 +19,9 @@ from .serializers import (
     DiseaseDetectionSerializer,
     DiseaseDetectionListSerializer,
     DiseaseDetectionCreateSerializer,
+    FarmingTipSerializer,
+    FarmingTipListSerializer,
+    FarmingTipCreateSerializer,
 )
 
 
@@ -55,7 +59,8 @@ class CropViewSet(mongo_viewsets.ModelViewSet):
     """ViewSet for Crop management with intelligent serializer selection"""
 
     queryset = Crop.objects.all()
-    filterset_fields = ["category", "tags"]
+    permission_classes = [IsAuthenticated]
+    filter_backends = []  # Remove django-filters to prevent MongoEngine conflicts
     search_fields = ["name", "scientific_name"]
     ordering_fields = ["name", "created_at"]
     ordering = ["-created_at"]  # Default ordering
@@ -67,6 +72,22 @@ class CropViewSet(mongo_viewsets.ModelViewSet):
         elif self.action in ["create", "update", "partial_update"]:
             return CropCreateSerializer
         return CropSerializer
+
+    def get_queryset(self):
+        """Custom queryset with filtering support"""
+        queryset = Crop.objects.all()
+        
+        # Apply category filter if provided
+        category = self.request.query_params.get('category')
+        if category:
+            queryset = queryset.filter(category=category)
+            
+        # Apply tag filter if provided  
+        tag = self.request.query_params.get('tags')
+        if tag:
+            queryset = queryset.filter(tags__in=[tag])
+            
+        return queryset
 
     @extend_schema(
         summary="Get crops by category",
@@ -179,8 +200,8 @@ class CropViewSet(mongo_viewsets.ModelViewSet):
 class FieldViewSet(mongo_viewsets.ModelViewSet):
     """ViewSet for Field management with user-specific access"""
 
-    permission_classes = []
-    filterset_fields = ["current_crop", "area"]
+    permission_classes = [IsAuthenticated]
+    filter_backends = []  # Remove django-filters to prevent MongoEngine conflicts
     search_fields = ["name", "weather_station_id"]
     ordering_fields = ["name", "created_at", "area"]
     ordering = ["-last_updated"]
@@ -194,11 +215,23 @@ class FieldViewSet(mongo_viewsets.ModelViewSet):
         return FieldSerializer
 
     def get_queryset(self):
-        """Filter fields by authenticated user"""
+        """Filter fields by authenticated user with additional filtering"""
         user = self.request.user
         if user.is_authenticated:
-            return Field.objects(owner_id=user.id)
-        return Field.objects.none()
+            queryset = Field.objects(owner_id=user.id)
+        else:
+            queryset = Field.objects.none()
+            
+        # Apply area filter if provided
+        area = self.request.query_params.get('area')
+        if area:
+            try:
+                area_value = float(area)
+                queryset = queryset.filter(area=area_value)
+            except (ValueError, TypeError):
+                pass
+                
+        return queryset
 
     def perform_create(self, serializer):
         """Set owner_id to current user when creating field"""
@@ -319,7 +352,8 @@ class DiseaseViewSet(mongo_viewsets.ModelViewSet):
     """ViewSet for Disease Detection management"""
 
     queryset = DiseaseDetection.objects.all()
-    filterset_fields = ["field", "crop", "disease_detected"]
+    permission_classes = [IsAuthenticated]
+    filter_backends = []  # Remove django-filters to prevent MongoEngine conflicts
     search_fields = ["disease_detected"]
     ordering_fields = ["detected_at", "confidence_score"]
     ordering = ["-detected_at"]
@@ -331,6 +365,17 @@ class DiseaseViewSet(mongo_viewsets.ModelViewSet):
         elif self.action in ["create", "update", "partial_update"]:
             return DiseaseDetectionCreateSerializer
         return DiseaseDetectionSerializer
+
+    def get_queryset(self):
+        """Custom queryset with filtering support"""
+        queryset = DiseaseDetection.objects.all()
+        
+        # Apply disease_detected filter if provided
+        disease = self.request.query_params.get('disease_detected')
+        if disease:
+            queryset = queryset.filter(disease_detected=disease)
+            
+        return queryset
 
     @extend_schema(
         summary="Detect disease from image",
@@ -464,33 +509,53 @@ class YieldPredictionViewSet(viewsets.ViewSet):
 @extend_schema_view(
     recommend=extend_schema(
         summary="Get crop recommendations",
-        description="Get crop recommendations based on field conditions",
+        description="Get crop recommendations based on soil and environmental conditions",
         request={
             "type": "object",
             "properties": {
-                "field_id": {"type": "string"},
-                "season": {"type": "string", "enum": ["kharif", "rabi", "zaid"]},
-                "soil_conditions": {"type": "object"},
+                "soil_type": {"type": "string", "description": "Type of soil (e.g., black, red, alluvial)"},
+                "soil_ph": {"type": "number", "minimum": 0, "maximum": 14, "description": "Soil pH level"},
+                "soil_nitrogen": {"type": "number", "description": "Nitrogen content (ppm)"},
+                "soil_phosphorus": {"type": "number", "description": "Phosphorus content (ppm)"},
+                "soil_potassium": {"type": "number", "description": "Potassium content (ppm)"},
+                "rainfall_mm": {"type": "number", "description": "Annual rainfall in mm"},
+                "temperature_avg": {"type": "number", "description": "Average temperature in Celsius"},
+                "humidity": {"type": "number", "description": "Humidity percentage"},
+                "field_id": {"type": "string", "description": "Optional field ID for context"},
+                "season": {"type": "string", "enum": ["kharif", "rabi", "zaid"], "description": "Growing season"},
+                "include_market": {"type": "boolean", "description": "Include market analysis", "default": True},
             },
+            "required": ["soil_ph", "soil_nitrogen", "soil_phosphorus", "soil_potassium"],
         },
         responses={
             200: {
                 "type": "object",
                 "properties": {
-                    "recommended_crops": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "crop": {"type": "string"},
-                                "suitability_score": {"type": "number"},
-                                "reasons": {
-                                    "type": "array",
-                                    "items": {"type": "string"},
+                    "success": {"type": "boolean"},
+                    "message": {"type": "string"},
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "recommendations": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "crop": {"type": "string"},
+                                        "suitability_score": {"type": "number"},
+                                        "confidence": {"type": "string"},
+                                        "reasons": {"type": "array", "items": {"type": "string"}},
+                                        "expected_yield": {"type": "object"},
+                                        "growing_season": {"type": "object"},
+                                        "investment_level": {"type": "object"},
+                                    },
                                 },
                             },
+                            "best_crop": {"type": "string"},
+                            "factors_considered": {"type": "object"},
+                            "market_analysis": {"type": "object"},
                         },
-                    }
+                    },
                 },
             }
         },
@@ -498,29 +563,258 @@ class YieldPredictionViewSet(viewsets.ViewSet):
 )
 class CropRecommendationViewSet(viewsets.ViewSet):
     """ViewSet for Crop Recommendation functionality"""
-
+    
+    permission_classes = []
+    
     @action(detail=False, methods=["post"])
     def recommend(self, request):
-        """Get crop recommendations - placeholder for ML implementation"""
-        return Response(
-            {
-                "message": "Crop recommendation not implemented yet",
-                "status": "pending_implementation",
-                "expected_response": {
-                    "recommended_crops": [
-                        {
-                            "crop": "crop_name",
-                            "suitability_score": "0.0-1.0",
-                            "reasons": ["list", "of", "reasons"],
-                        }
-                    ]
+        """Get intelligent crop recommendations based on soil and environmental conditions"""
+        try:
+            from .crop_recommender import CropRecommender
+            from ..Advisory.Services.recommendation_aggregator import RecommendationAggregator
+            import logging
+            
+            logger = logging.getLogger(__name__)
+            logger.info("🌱 Processing crop recommendation request")
+            
+            # Validate required parameters
+            required_fields = ['soil_ph', 'soil_nitrogen', 'soil_phosphorus', 'soil_potassium']
+            missing_fields = [field for field in required_fields if field not in request.data]
+            
+            if missing_fields:
+                return Response(
+                    {
+                        "success": False,
+                        "message": f"Missing required fields: {', '.join(missing_fields)}",
+                        "error": "Please provide all required soil parameters",
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            
+            # Extract parameters with defaults
+            soil_type = request.data.get('soil_type', 'mixed')
+            soil_ph = float(request.data.get('soil_ph', 6.5))
+            nitrogen = float(request.data.get('soil_nitrogen', 60))
+            phosphorus = float(request.data.get('soil_phosphorus', 40))
+            potassium = float(request.data.get('soil_potassium', 80))
+            rainfall = float(request.data.get('rainfall_mm', 800))
+            temperature = float(request.data.get('temperature_avg', 25))
+            humidity = float(request.data.get('humidity', 65))
+            include_market = request.data.get('include_market', True)
+            season = request.data.get('season', 'kharif')
+            field_id = request.data.get('field_id')
+            
+            # Validate ranges
+            if not (0 <= soil_ph <= 14):
+                return Response(
+                    {
+                        "success": False,
+                        "message": "Invalid soil pH value",
+                        "error": "pH must be between 0 and 14",
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            
+            # Try ML-based recommendation first
+            try:
+                recommender = CropRecommender()
+                ml_result = recommender.recommend(
+                    soil_type=soil_type,
+                    ph_level=soil_ph,
+                    nitrogen=nitrogen,
+                    phosphorus=phosphorus,
+                    potassium=potassium,
+                    rainfall=rainfall,
+                    temperature=temperature,
+                    humidity=humidity,
+                    include_market=include_market,
+                )
+                
+                # Format ML results for response
+                recommendations = []
+                for i, crop in enumerate(ml_result.get('crops', [])):
+                    score = ml_result.get('scores', {}).get(crop, 0)
+                    detailed_info = None
+                    
+                    # Find detailed info for this crop
+                    for detail in ml_result.get('detailed', []):
+                        if detail.get('crop_name') == crop:
+                            detailed_info = detail
+                            break
+                    
+                    recommendation = {
+                        "crop": crop,
+                        "suitability_score": score / 100.0 if score > 1 else score,  # Normalize to 0-1
+                        "confidence": "high" if score > 80 else "medium" if score > 60 else "low",
+                        "reasons": [detailed_info.get('recommendation_reason')] if detailed_info else ["Suitable based on soil conditions"],
+                        "expected_yield": {
+                            "estimated_tons_per_hectare": detailed_info.get('expected_yield', 'Varies'),
+                            "confidence_level": "medium"
+                        } if detailed_info else {"estimated_tons_per_hectare": "Varies", "confidence_level": "medium"},
+                        "growing_season": {
+                            "season": detailed_info.get('season', 'Multi-season'),
+                            "duration": detailed_info.get('duration', '90-180 days')
+                        } if detailed_info else {"season": "Multi-season", "duration": "90-180 days"},
+                        "investment_level": {
+                            "level": "Medium",
+                            "market_price": detailed_info.get('market_price', 'Market dependent')
+                        } if detailed_info else {"level": "Medium", "market_price": "Market dependent"},
+                    }
+                    recommendations.append(recommendation)
+                
+                response_data = {
+                    "success": True,
+                    "message": "Crop recommendations generated successfully",
+                    "data": {
+                        "recommendations": recommendations,
+                        "best_crop": ml_result.get('best_crop'),
+                        "factors_considered": ml_result.get('factors_considered', {}),
+                        "total_recommendations": len(recommendations),
+                        "analysis_type": "ML-based analysis with soil optimization",
+                        "confidence_level": "high",
+                    },
+                }
+                
+                if include_market and 'market_analysis' in ml_result:
+                    response_data["data"]["market_analysis"] = ml_result['market_analysis']
+                
+                logger.info(f"✅ Successfully generated {len(recommendations)} crop recommendations using ML")
+                return Response(response_data)
+                
+            except Exception as ml_error:
+                logger.warning(f"ML recommendation failed: {str(ml_error)}, falling back to rule-based")
+                
+                # Fallback to rule-based recommendation
+                aggregator = RecommendationAggregator()
+                soil_data = {
+                    'soil_ph': soil_ph,
+                    'soil_nitrogen': nitrogen,
+                    'soil_phosphorus': phosphorus,
+                    'soil_potassium': potassium,
+                    'rainfall_mm': rainfall,
+                    'temperature_avg': temperature,
+                    'humidity': humidity,
+                }
+                
+                location_data = {'season': season}
+                if field_id:
+                    location_data['field_id'] = field_id
+                
+                fallback_recommendations = aggregator.get_quick_crop_recommendations(
+                    soil_data, location_data
+                )
+                
+                response_data = {
+                    "success": True,
+                    "message": "Crop recommendations generated successfully (rule-based analysis)",
+                    "data": {
+                        "recommendations": fallback_recommendations,
+                        "best_crop": fallback_recommendations[0]['crop'] if fallback_recommendations else None,
+                        "factors_considered": {
+                            "soil_type": soil_type,
+                            "ph_level": soil_ph,
+                            "npk": {"N": nitrogen, "P": phosphorus, "K": potassium},
+                            "climate": {"rainfall": rainfall, "temperature": temperature, "humidity": humidity},
+                        },
+                        "total_recommendations": len(fallback_recommendations),
+                        "analysis_type": "Rule-based analysis with expert knowledge",
+                        "confidence_level": "medium",
+                    },
+                }
+                
+                logger.info(f"✅ Successfully generated {len(fallback_recommendations)} crop recommendations using rule-based approach")
+                return Response(response_data)
+                
+        except ValueError as ve:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Invalid input values",
+                    "error": str(ve),
                 },
-            }
-        )
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except Exception as e:
+            logger.error(f"Crop recommendation failed: {str(e)}")
+            return Response(
+                {
+                    "success": False,
+                    "message": "Failed to generate crop recommendations",
+                    "error": str(e),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 @extend_schema_view(
-    daily=extend_schema(
+    list=extend_schema(
+        summary="List farming tips",
+        description="Get a list of all farming tips",
+        responses={200: FarmingTipListSerializer(many=True)},
+    ),
+    retrieve=extend_schema(
+        summary="Get farming tip details",
+        description="Get detailed information about a specific farming tip",
+        responses={200: FarmingTipSerializer},
+    ),
+    create=extend_schema(
+        summary="Create farming tip",
+        description="Create a new farming tip",
+        request=FarmingTipCreateSerializer,
+        responses={201: FarmingTipSerializer},
+    ),
+    update=extend_schema(
+        summary="Update farming tip",
+        description="Update a farming tip",
+        request=FarmingTipCreateSerializer,
+        responses={200: FarmingTipSerializer},
+    ),
+    partial_update=extend_schema(
+        summary="Partially update farming tip",
+        description="Update specific fields of a farming tip",
+        request=FarmingTipCreateSerializer,
+        responses={200: FarmingTipSerializer},
+    ),
+)
+class FarmingTipViewSet(viewsets.ModelViewSet):
+    """ViewSet for Farming Tips and Advisory with full CRUD operations"""
+    
+    queryset = FarmingTip.objects.all()
+    permission_classes = [IsAuthenticated]
+    search_fields = ["title", "content", "category"]
+    ordering_fields = ["title", "category", "importance", "created_at"]
+    ordering = ["-importance", "-created_at"]
+    
+    def get_serializer_class(self):
+        """Return appropriate serializer based on action"""
+        if self.action == "list":
+            return FarmingTipListSerializer
+        elif self.action in ["create", "update", "partial_update"]:
+            return FarmingTipCreateSerializer
+        return FarmingTipSerializer
+    
+    def get_queryset(self):
+        """Custom queryset with filtering support"""
+        queryset = FarmingTip.objects.filter(is_active=True)
+        
+        # Apply category filter if provided
+        category = self.request.query_params.get('category')
+        if category:
+            queryset = queryset.filter(category=category)
+            
+        # Apply importance filter if provided
+        importance = self.request.query_params.get('importance')
+        if importance:
+            queryset = queryset.filter(importance=importance)
+            
+        # Apply season filter if provided
+        season = self.request.query_params.get('season')
+        if season:
+            queryset = queryset.filter(season=season)
+            
+        return queryset
+
+    @extend_schema(
         summary="Get daily farming tip",
         description="Get daily farming tips based on season and location",
         parameters=[
@@ -529,37 +823,44 @@ class CropRecommendationViewSet(viewsets.ViewSet):
                 type=OpenApiTypes.STR,
                 location=OpenApiParameter.QUERY,
                 description="Tip category",
-                enum=["irrigation", "fertilization", "pest_control", "general"],
+                enum=["general", "seasonal", "crop_specific", "pest_management", "soil_health", "water_management", "harvesting", "storage"],
             )
         ],
-        responses={
-            200: {
-                "type": "object",
-                "properties": {
-                    "tip": {"type": "string"},
-                    "category": {"type": "string"},
-                    "relevance": {"type": "string"},
-                },
-            }
-        },
+        responses={200: FarmingTipSerializer},
     )
-)
-class FarmingTipViewSet(viewsets.ViewSet):
-    """ViewSet for Farming Tips and Advisory"""
-
     @action(detail=False, methods=["get"])
     def daily(self, request):
         """Get daily farming tip"""
         category = request.query_params.get("category", "general")
-        return Response(
-            {
-                "message": "Daily farming tip not implemented yet",
-                "status": "pending_implementation",
-                "category": category,
-                "expected_response": {
-                    "tip": "farming tip text",
-                    "category": "tip category",
-                    "relevance": "seasonal relevance",
-                },
-            }
-        )
+        
+        try:
+            # Get a random tip from the specified category
+            tips = FarmingTip.objects.filter(
+                is_active=True,
+                category=category
+            ).order_by('?')  # Random ordering
+            
+            if tips.exists():
+                tip = tips.first()
+                serializer = self.get_serializer(tip)
+                return Response(serializer.data)
+            else:
+                # Fallback to any active tip
+                tip = FarmingTip.objects.filter(is_active=True).order_by('?').first()
+                if tip:
+                    serializer = self.get_serializer(tip)
+                    return Response(serializer.data)
+                else:
+                    return Response(
+                        {
+                            "message": "No farming tips available",
+                            "category": category,
+                            "suggestion": "Create some farming tips in the admin panel",
+                        },
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to get daily tip: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

@@ -64,6 +64,12 @@ urlpatterns = [
         views.AdvisorySessionViewSet.as_view({"get": "summary"}),
         name="session-summary",
     ),
+    # Standalone advisory endpoint (matches Postman pattern)
+    path(
+        "get_advisory/",
+        views.StandaloneAdvisoryView.as_view(),
+        name="standalone-advisory",
+    ),
     # Router URLs (includes all CRUD operations)
     path("", include(router.urls)),
 ]

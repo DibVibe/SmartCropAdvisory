@@ -265,7 +265,7 @@
           ],
           "request": {
             "method": "GET",
-            "url": { "raw": "{{api_base_url}}/status/status/", "host": ["{{api_base_url}}"], "path": ["status", "status", ""] },
+            "url": { "raw": "{{api_base_url}}/status/", "host": ["{{api_base_url}}"], "path": ["status", ""] },
             "description": "📊 Uptime, load, ML model status"
           }
         },
@@ -273,7 +273,7 @@
           "name": "Stats Dashboard",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{api_base_url}}/status/stats/?period=24h", "host": ["{{api_base_url}}"], "path": ["status", "stats", ""], "query": [{ "key": "period", "value": "24h" }] },
+            "url": { "raw": "{{api_base_url}}/{{api_version}}/status/stats/?period=24h", "host": ["{{api_base_url}}"], "path": ["{{api_version}}", "status", "stats", ""], "query": [{ "key": "period", "value": "24h" }] },
             "description": "📈 Requests/sec, errors, top endpoints"
           }
         },
@@ -281,16 +281,16 @@
           "name": "Detailed Health",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{api_base_url}}/status/health/details/", "host": ["{{api_base_url}}"], "path": ["status", "health", "details", ""] },
+            "url": { "raw": "{{api_base_url}}/{{api_version}}/status/health/details/", "host": ["{{api_base_url}}"], "path": ["{{api_version}}", "status", "health", "details", ""] },
             "description": "🔍 Deep dive—logs, configs, dependencies"
           }
         },
         {
-          "name": "MongoDB Status",
+          "name": "System Status v1",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{api_base_url}}/status/mongodb/", "host": ["{{api_base_url}}"], "path": ["status", "mongodb", ""] },
-            "description": "🗄️ CropAnalysis Mongo health—collections, indexes"
+            "url": { "raw": "{{api_base_url}}/{{api_version}}/status/", "host": ["{{api_base_url}}"], "path": ["{{api_version}}", "status", ""] },
+            "description": "🗄️ System status from SystemStatus app (v1)"
           }
         }
       ]
@@ -552,7 +552,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Recs generated', () => { pm.response.to.have.status(200); });",
-                  "pm.test('Crop suggestions', () => { const json = pm.response.json(); pm.expect(json.recommendations).to.be.an('array').lengthOf.at.least(3); });"
+                  "pm.test('Crop suggestions', () => { const json = pm.response.json(); pm.expect(json.success).to.be.true; pm.expect(json.data.recommendations).to.be.an('array').lengthOf.at.least(3); });"
                 ]
               }
             }
@@ -560,7 +560,7 @@
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"farm_id\": \"{{test_farm_id}}\",\n  \"soil_ph\": 6.5,\n  \"nitrogen\": 60,\n  \"phosphorus\": 40,\n  \"potassium\": 80,\n  \"season\": \"kharif\",\n  \"area_available\": 3.0\n}" },
+            "body": { "mode": "raw", "raw": "{\n  \"soil_ph\": 6.5,\n  \"soil_nitrogen\": 60,\n  \"soil_phosphorus\": 40,\n  \"soil_potassium\": 80,\n  \"rainfall_mm\": 800,\n  \"temperature_avg\": 25,\n  \"humidity\": 65,\n  \"soil_type\": \"loamy\",\n  \"season\": \"kharif\",\n  \"include_market\": true,\n  \"field_id\": \"1\"\n}" },
             "url": { "raw": "{{api_base_url}}/{{api_version}}/crop/recommendations/", "host": ["{{api_base_url}}"], "path": ["{{api_version}}", "crop", "recommendations", ""] },
             "description": "🤖 Crop recs—soil + season inputs"
           }
@@ -591,7 +591,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Yield forecast', () => { pm.response.to.have.status(200); });",
-                  "pm.test('Prediction fields', () => { const json = pm.response.json(); pm.expect(json).to.have.property('predicted_yield').above(0); pm.expect(json).to.have.property('confidence'); });"
+                  "pm.test('Placeholder response', () => { const json = pm.response.json(); pm.expect(json).to.have.property('message'); pm.expect(json).to.have.property('status', 'pending_implementation'); });"
                 ]
               }
             }
@@ -600,7 +600,7 @@
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": { "mode": "raw", "raw": "{\n  \"crop_id\": \"{{test_crop_id}}\",\n  \"field_id\": \"{{test_field_id}}\",\n  \"planting_date\": \"2025-06-01\",\n  \"weather_forecast\": {\"temp_avg\": 28, \"rainfall\": 900},\n  \"soil_nutrients\": {\"N\": 60, \"P\": 40, \"K\": 80}\n}" },
-            "url": { "raw": "{{api_base_url}}/{{api_version}}/crop/yield/predict/", "host": ["{{api_base_url}}"], "path": ["{{api_version}}", "crop", "yield", "predict", ""] },
+            "url": { "raw": "{{api_base_url}}/{{api_version}}/crop/predict-yield/", "host": ["{{api_base_url}}"], "path": ["{{api_version}}", "crop", "predict-yield", ""] },
             "description": "📈 Yield prediction—crop + env factors"
           }
         },

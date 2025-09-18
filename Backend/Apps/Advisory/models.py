@@ -166,6 +166,8 @@ class AdvisoryAlert(models.Model):
     is_read = models.BooleanField(default=False)
     is_resolved = models.BooleanField(default=False)
     expires_at = models.DateTimeField(null=True, blank=True)
+    resolution_note = models.TextField(blank=True, help_text="Note about how the alert was resolved")
+    read_at = models.DateTimeField(null=True, blank=True, help_text="When the alert was marked as read")
 
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)

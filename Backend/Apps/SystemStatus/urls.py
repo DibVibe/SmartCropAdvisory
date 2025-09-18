@@ -10,8 +10,8 @@ from . import views
 app_name = "systemstatus"
 
 urlpatterns = [
-    # System status overview
-    path("status/", views.system_status, name="system-status"),
+    # System status overview (served at /api/v1/status/)
+    path("", views.system_status, name="system-status"),
     # System statistics
     path("stats/", views.system_stats, name="system-stats"),
     # Simple health check

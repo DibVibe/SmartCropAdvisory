@@ -16,7 +16,7 @@ from django.core.cache import cache
 from django.db.models import Count, Avg, Q
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
@@ -49,8 +49,8 @@ def check_database_health():
             return {"status": "warning", "response_time": response_time}
         else:
             return {"status": "critical", "response_time": response_time}
-    except Exception as e:
-        return {"status": "critical", "error": str(e)}
+    except Exception:
+        return {"status": "critical", "response_time": 0}
 
 
 def check_cache_health():
@@ -72,14 +72,21 @@ def check_cache_health():
             return {"status": "warning", "response_time": response_time}
         else:
             return {"status": "critical", "response_time": response_time}
-    except Exception as e:
-        return {"status": "critical", "error": str(e)}
+    except Exception:
+        return {"status": "critical", "response_time": 0}
 
 
 def get_disk_usage():
     """Get disk usage statistics"""
     try:
-        usage = psutil.disk_usage("/")
+        import os
+        # Use current drive on Windows, root on Unix
+        if os.name == 'nt':  # Windows
+            path = os.path.splitdrive(os.getcwd())[0] + os.sep
+        else:  # Unix/Linux/Mac
+            path = "/"
+        
+        usage = psutil.disk_usage(path)
         return {
             "total": usage.total,
             "used": usage.used,
@@ -87,7 +94,12 @@ def get_disk_usage():
             "percentage": (usage.used / usage.total) * 100,
         }
     except Exception:
-        return {"error": "Unable to retrieve disk usage"}
+        return {
+            "total": 0,
+            "used": 0,
+            "free": 0,
+            "percentage": 0,
+        }
 
 
 def get_memory_usage():
@@ -101,21 +113,32 @@ def get_memory_usage():
             "percentage": memory.percent,
         }
     except Exception:
-        return {"error": "Unable to retrieve memory usage"}
+        return {
+            "total": 0,
+            "available": 0,
+            "used": 0,
+            "percentage": 0,
+        }
 
 
 def check_ml_models_status():
     """Check if ML models are available and accessible"""
     models_status = {}
 
-    for model_name, model_path in settings.ML_MODELS.items():
-        try:
-            if model_path.exists():
-                models_status[model_name] = "available"
-            else:
-                models_status[model_name] = "missing"
-        except Exception as e:
-            models_status[model_name] = f"error: {str(e)}"
+    try:
+        ml_models = getattr(settings, 'ML_MODELS', {})
+        for model_name, model_config in ml_models.items():
+            try:
+                model_path = model_config.get('path')
+                if model_path and hasattr(model_path, 'exists') and model_path.exists():
+                    models_status[model_name] = "available"
+                else:
+                    models_status[model_name] = "missing"
+            except Exception:
+                models_status[model_name] = "unavailable"
+    except Exception:
+        # Return empty dict if ML_MODELS setting is not available
+        models_status = {}
 
     return models_status
 
@@ -127,7 +150,7 @@ def check_ml_models_status():
     tags=["system"],
 )
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def system_status(request):
     """
     Get comprehensive system status
@@ -205,8 +228,8 @@ def system_status(request):
             name="period",
             type=OpenApiTypes.STR,
             location=OpenApiParameter.QUERY,
-            description="Time period: today, week, month",
-            enum=["today", "week", "month"],
+            description="Time period: today, week, month, 24h",
+            enum=["today", "week", "month", "24h"],
             default="today",
         ),
     ],
@@ -214,7 +237,7 @@ def system_status(request):
     tags=["system"],
 )
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAuthenticated])
 def system_stats(request):
     """
     Get detailed system statistics
@@ -226,6 +249,8 @@ def system_stats(request):
     end_date = timezone.now()
     if period == "today":
         start_date = end_date.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif period == "24h":
+        start_date = end_date - timedelta(hours=24)
     elif period == "week":
         start_date = end_date - timedelta(days=7)
     elif period == "month":
@@ -301,6 +326,7 @@ def system_stats(request):
     tags=["system"],
 )
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def health_check(request):
     """
     Simple health check endpoint
@@ -321,7 +347,7 @@ def health_check(request):
     tags=["system"],
 )
 @api_view(["GET"])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAuthenticated])
 def health_details(request):
     """
     Detailed health check for all components

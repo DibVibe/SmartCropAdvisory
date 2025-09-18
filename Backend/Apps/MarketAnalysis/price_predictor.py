@@ -1,12 +1,19 @@
-import numpy as np
-import pandas as pd
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.preprocessing import StandardScaler
-import joblib
 import logging
 from .models import MarketPrice, Commodity, PricePrediction
+
+# Safe imports for ML dependencies
+try:
+    import numpy as np
+    import pandas as pd
+    from sklearn.ensemble import RandomForestRegressor
+    from sklearn.preprocessing import StandardScaler
+    import joblib
+    ML_AVAILABLE = True
+except ImportError as e:
+    ML_AVAILABLE = False
+    print(f"⚠️ ML libraries not available: {e}. Price prediction features will be limited.")
 
 logger = logging.getLogger(__name__)
 
@@ -16,12 +23,18 @@ class PricePredictor:
 
     def __init__(self):
         self.model = None
-        self.scaler = StandardScaler()
+        self.scaler = StandardScaler() if ML_AVAILABLE else None
         self.model_path = "Scripts/Models/price_predictor.pkl"
         self.scaler_path = "Scripts/Models/price_scaler.pkl"
 
     def train_model(self, commodity_id: int, market_id: int = None) -> Dict:
         """Train price prediction model for a commodity"""
+        if not ML_AVAILABLE:
+            return {
+                "error": "ML libraries (pandas, sklearn) not available. Please install them to use price prediction features.",
+                "status": "ml_unavailable"
+            }
+        
         try:
             # Get historical price data
             queryset = MarketPrice.objects.filter(commodity_id=commodity_id)

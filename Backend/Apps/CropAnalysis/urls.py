@@ -39,6 +39,11 @@ urlpatterns = [
         name="recommend-crops",
     ),
     path(
+        "recommendations/",
+        views.CropRecommendationViewSet.as_view({"post": "recommend"}),
+        name="recommendations",
+    ),
+    path(
         "fields/<int:pk>/analyze/",
         views.FieldViewSet.as_view({"post": "analyze"}),
         name="field-analyze",

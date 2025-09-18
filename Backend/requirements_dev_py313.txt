@@ -1,0 +1,32 @@
+# Development Tools
+django-extensions>=3.2.0
+django-debug-toolbar>=4.2.0
+
+# Code Quality
+black>=23.0.0
+flake8>=6.0.0
+isort>=5.12.0
+
+# Testing
+pytest>=7.4.0
+pytest-django>=4.7.0
+pytest-cov>=4.1.0
+coverage>=7.0.0
+
+# File Processing
+openpyxl>=3.1.0
+python-docx>=1.1.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+
+# Additional Django utilities
+django-robots>=6.0
+
+# Production helpers
+django-health-check>=3.17.0
+django-compressor>=4.4
+django-ratelimit>=4.1.0
+django-csp>=3.7
+
+# System utilities
+psutil>=5.9.0

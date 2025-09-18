@@ -245,6 +245,56 @@ class WeatherAPIViewSet(viewsets.ViewSet):
 
     permission_classes = []
 
+    def list(self, request):
+        """Weather API integration endpoint - external weather API access"""
+        base_url = request.build_absolute_uri().rstrip('/')
+        
+        api_info = {
+            "weather_api": "SmartCropAdvisory Weather API Integration",
+            "version": "2.0.0",
+            "timestamp": timezone.now().isoformat(),
+            "description": "External weather API integration for real-time weather data and forecasts",
+            "available_endpoints": {
+                "current_weather": {
+                    "url": f"{base_url}/current/",
+                    "method": "GET",
+                    "description": "Get current weather conditions for a location",
+                    "parameters": ["lat", "lon"]
+                },
+                "weather_forecast": {
+                    "url": f"{base_url}/forecast/",
+                    "method": "GET",
+                    "description": "Get weather forecast for a location",
+                    "parameters": ["lat", "lon", "days"]
+                },
+                "weather_alerts": {
+                    "url": f"{base_url}/alerts/",
+                    "method": "GET", 
+                    "description": "Get active weather alerts for a location",
+                    "parameters": ["lat", "lon"]
+                },
+                "extreme_weather_risk": {
+                    "url": f"{base_url}/extreme_weather_risk/",
+                    "method": "GET",
+                    "description": "Analyze extreme weather risks",
+                    "parameters": ["lat", "lon", "days"]
+                }
+            },
+            "related_endpoints": {
+                "weather_stations": "/api/v1/weather/stations/",
+                "weather_data": "/api/v1/weather/data/",
+                "forecasts": "/api/v1/weather/forecasts/",
+                "crop_requirements": "/api/v1/weather/crop-requirements/"
+            },
+            "external_apis": {
+                "supported_providers": ["OpenWeatherMap", "WeatherAPI", "AccuWeather"],
+                "data_sources": ["Real-time weather", "7-day forecasts", "Historical data", "Weather alerts"],
+                "update_frequency": "Real-time"
+            }
+        }
+        
+        return Response(api_info)
+
     @action(detail=False, methods=["get"])
     def current(self, request):
         """Get current weather for location"""

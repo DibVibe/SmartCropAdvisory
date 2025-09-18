@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.authentication import TokenAuthentication
+from rest_framework.exceptions import ValidationError
 from django.core.cache import cache
 from django.utils import timezone
 from django.db.models import Count, Avg
@@ -17,6 +18,9 @@ from datetime import timedelta
 import logging
 
 from .models import Farm, AdvisorySession, FarmDashboard, AdvisoryAlert
+from Apps.UserManagement.views import TokenAuthenticationMixin
+from Apps.UserManagement.mongo_models import MongoUser
+from Apps.UserManagement.authentication import MongoTokenAuthentication
 from .serializers import (
     FarmSerializer,
     AdvisorySessionSerializer,
@@ -32,7 +36,7 @@ from .Services.farm_dashboard import FarmDashboardService
 logger = logging.getLogger(__name__)
 
 
-class FarmViewSet(viewsets.ModelViewSet):
+class FarmViewSet(viewsets.ModelViewSet, TokenAuthenticationMixin):
     """
     Farm management viewset.
 
@@ -41,18 +45,73 @@ class FarmViewSet(viewsets.ModelViewSet):
     """
 
     serializer_class = FarmSerializer
-    #     permission_classes = []
-    #     authentication_classes = [JWTAuthentication, TokenAuthentication]
+    permission_classes = []
+    authentication_classes = [MongoTokenAuthentication, JWTAuthentication, TokenAuthentication]
+    
+    def get_current_user(self):
+        """Get current user from either DRF auth or custom MongoDB auth"""
+        # First try standard DRF authentication
+        if hasattr(self.request, 'user') and self.request.user.is_authenticated:
+            return self.request.user, None
+        
+        # Fall back to custom MongoDB authentication
+        mongo_user, error = self.get_user_from_token(self.request)
+        if error:
+            return None, error
+        
+        return mongo_user, None
 
     def get_queryset(self):
         """Return active farms for the authenticated user."""
-        return Farm.objects.filter(owner=self.request.user, is_active=True).order_by(
+        user, error = self.get_current_user()
+        if error:
+            return Farm.objects.none()
+        
+        # If it's a MongoDB user wrapped in MongoAuthenticationUser, get the actual Django user
+        if hasattr(user, 'mongo_user'):
+            # This is a MongoDB user, need to find/create corresponding Django user
+            from django.contrib.auth.models import User
+            django_user, created = User.objects.get_or_create(
+                username=user.username,
+                defaults={
+                    'email': user.email,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'is_active': user.is_active,
+                }
+            )
+            actual_user = django_user
+        else:
+            # This is already a Django user
+            actual_user = user
+            
+        return Farm.objects.filter(owner=actual_user, is_active=True).order_by(
             "-created_at"
         )
 
     def perform_create(self, serializer):
         """Create farm for the authenticated user."""
-        serializer.save(owner=self.request.user)
+        user, error = self.get_current_user()
+        if error:
+            raise ValidationError("Authentication required")
+            
+        # Get or create Django user for MongoDB users
+        if hasattr(user, 'mongo_user'):
+            from django.contrib.auth.models import User
+            django_user, created = User.objects.get_or_create(
+                username=user.username,
+                defaults={
+                    'email': user.email,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'is_active': user.is_active,
+                }
+            )
+            actual_user = django_user
+        else:
+            actual_user = user
+            
+        serializer.save(owner=actual_user)
 
         # Log farm creation activity
         self._log_farm_activity(
@@ -138,10 +197,15 @@ class FarmViewSet(viewsets.ModelViewSet):
             )
 
     @action(detail=True, methods=["get"])
-    def dashboard(self, request, pk=None):
+    def dashboard(self, request, pk=None, farm_id=None):
         """Get comprehensive farm dashboard."""
         try:
-            farm = self.get_object()
+            # Use farm_id if provided (from custom URL), otherwise use pk (from router URL)
+            farm_lookup = farm_id or pk
+            if farm_lookup:
+                farm = self.get_queryset().get(id=farm_lookup)
+            else:
+                farm = self.get_object()
             dashboard_service = FarmDashboardService()
 
             # Check cache first
@@ -263,16 +327,33 @@ class FarmViewSet(viewsets.ModelViewSet):
             )
 
     @action(detail=True, methods=["get"])
-    def alerts(self, request, pk=None):
+    def alerts(self, request, pk=None, farm_id=None):
         """Get farm alerts with filtering options."""
         try:
-            farm = self.get_object()
+            # Use farm_id if provided (from custom URL), otherwise use pk (from router URL)
+            farm_lookup = farm_id or pk
+            if farm_lookup:
+                farm = self.get_queryset().get(id=farm_lookup)
+            else:
+                farm = self.get_object()
 
-            # Filter parameters
+            # Filter parameters - support both 'resolved' and 'unresolved' params
             priority = request.query_params.get("priority")
-            is_resolved = (
-                request.query_params.get("resolved", "false").lower() == "true"
-            )
+            
+            # Handle both 'resolved' and 'unresolved' query parameters
+            resolved_param = request.query_params.get("resolved")
+            unresolved_param = request.query_params.get("unresolved")
+            
+            if unresolved_param is not None:
+                # If 'unresolved=true', we want is_resolved=False
+                is_resolved = not (unresolved_param.lower() == "true")
+            elif resolved_param is not None:
+                # If 'resolved=true', we want is_resolved=True
+                is_resolved = resolved_param.lower() == "true"
+            else:
+                # Default: show unresolved alerts (is_resolved=False)
+                is_resolved = False
+                
             days = int(request.query_params.get("days", 30))
 
             # Build query
@@ -281,6 +362,7 @@ class FarmViewSet(viewsets.ModelViewSet):
             if priority:
                 alerts_query = alerts_query.filter(priority=priority)
 
+            # Filter by resolved status
             alerts_query = alerts_query.filter(is_resolved=is_resolved)
 
             if days > 0:
@@ -305,7 +387,8 @@ class FarmViewSet(viewsets.ModelViewSet):
                     "statistics": alert_stats,
                     "filters_applied": {
                         "priority": priority,
-                        "resolved": is_resolved,
+                        "resolved": not is_resolved if unresolved_param else is_resolved,
+                        "unresolved": is_resolved if unresolved_param else not is_resolved,
                         "days": days,
                     },
                 }
@@ -473,7 +556,7 @@ class FarmViewSet(viewsets.ModelViewSet):
             logger.warning(f"Failed to log farm activity: {e}")
 
 
-class AdvisorySessionViewSet(viewsets.ReadOnlyModelViewSet):
+class AdvisorySessionViewSet(viewsets.ReadOnlyModelViewSet, TokenAuthenticationMixin):
     """
     Advisory session history management.
 
@@ -481,16 +564,70 @@ class AdvisorySessionViewSet(viewsets.ReadOnlyModelViewSet):
     """
 
     serializer_class = AdvisorySessionSerializer
-    #     permission_classes = []
-    #     authentication_classes = [JWTAuthentication, TokenAuthentication]
+    permission_classes = []
+    authentication_classes = [MongoTokenAuthentication, JWTAuthentication, TokenAuthentication]
 
+    def get_current_user(self):
+        """Get current user from either DRF auth or custom MongoDB auth"""
+        # First try standard DRF authentication
+        if hasattr(self.request, 'user') and self.request.user.is_authenticated:
+            return self.request.user, None
+        
+        # Fall back to custom MongoDB authentication
+        mongo_user, error = self.get_user_from_token(self.request)
+        if error:
+            return None, error
+        
+        return mongo_user, None
+        
     def get_queryset(self):
         """Return advisory sessions for user's farms."""
-        return (
-            AdvisorySession.objects.filter(farm__owner=self.request.user)
-            .select_related("farm")
-            .order_by("-created_at")
-        )
+        user, error = self.get_current_user()
+        if error:
+            return AdvisorySession.objects.none()
+        
+        # Always ensure we have a proper Django User object
+        try:
+            # If it's a MongoDB user wrapped in MongoAuthenticationUser, get the actual Django user
+            if hasattr(user, 'mongo_user'):
+                # This is a MongoDB user, need to find/create corresponding Django user
+                from django.contrib.auth.models import User
+                django_user, created = User.objects.get_or_create(
+                    username=user.username,
+                    defaults={
+                        'email': user.email,
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
+                        'is_active': user.is_active,
+                    }
+                )
+                actual_user = django_user
+            elif hasattr(user, 'username'):
+                # This might be a MongoAuthenticationUser, get Django user by username
+                from django.contrib.auth.models import User
+                try:
+                    actual_user = User.objects.get(username=user.username)
+                except User.DoesNotExist:
+                    # Create Django user if it doesn't exist
+                    actual_user = User.objects.create(
+                        username=user.username,
+                        email=getattr(user, 'email', ''),
+                        first_name=getattr(user, 'first_name', ''),
+                        last_name=getattr(user, 'last_name', ''),
+                        is_active=getattr(user, 'is_active', True),
+                    )
+            else:
+                # This is already a Django user
+                actual_user = user
+                
+            return (
+                AdvisorySession.objects.filter(farm__owner=actual_user)
+                .select_related("farm")
+                .order_by("-created_at")
+            )
+        except Exception as e:
+            logger.error(f"Error in get_queryset: {e}")
+            return AdvisorySession.objects.none()
 
     def list(self, request, *args, **kwargs):
         """List advisory sessions with enhanced filtering."""
@@ -607,7 +744,7 @@ class AdvisorySessionViewSet(viewsets.ReadOnlyModelViewSet):
             )
 
 
-class AdvisoryAlertViewSet(viewsets.ModelViewSet):
+class AdvisoryAlertViewSet(viewsets.ModelViewSet, TokenAuthenticationMixin):
     """
     Advisory alerts management.
 
@@ -615,16 +752,70 @@ class AdvisoryAlertViewSet(viewsets.ModelViewSet):
     """
 
     serializer_class = AdvisoryAlertSerializer
-    #     permission_classes = []
-    #     authentication_classes = [JWTAuthentication, TokenAuthentication]
+    permission_classes = []
+    authentication_classes = [MongoTokenAuthentication, JWTAuthentication, TokenAuthentication]
+
+    def get_current_user(self):
+        """Get current user from either DRF auth or custom MongoDB auth"""
+        # First try standard DRF authentication
+        if hasattr(self.request, 'user') and self.request.user.is_authenticated:
+            return self.request.user, None
+        
+        # Fall back to custom MongoDB authentication
+        mongo_user, error = self.get_user_from_token(self.request)
+        if error:
+            return None, error
+        
+        return mongo_user, None
 
     def get_queryset(self):
         """Return alerts for user's farms."""
-        return (
-            AdvisoryAlert.objects.filter(farm__owner=self.request.user)
-            .select_related("farm")
-            .order_by("-created_at")
-        )
+        user, error = self.get_current_user()
+        if error:
+            return AdvisoryAlert.objects.none()
+        
+        # Always ensure we have a proper Django User object
+        try:
+            # If it's a MongoDB user wrapped in MongoAuthenticationUser, get the actual Django user
+            if hasattr(user, 'mongo_user'):
+                # This is a MongoDB user, need to find/create corresponding Django user
+                from django.contrib.auth.models import User
+                django_user, created = User.objects.get_or_create(
+                    username=user.username,
+                    defaults={
+                        'email': user.email,
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
+                        'is_active': user.is_active,
+                    }
+                )
+                actual_user = django_user
+            elif hasattr(user, 'username'):
+                # This might be a MongoAuthenticationUser, get Django user by username
+                from django.contrib.auth.models import User
+                try:
+                    actual_user = User.objects.get(username=user.username)
+                except User.DoesNotExist:
+                    # Create Django user if it doesn't exist
+                    actual_user = User.objects.create(
+                        username=user.username,
+                        email=getattr(user, 'email', ''),
+                        first_name=getattr(user, 'first_name', ''),
+                        last_name=getattr(user, 'last_name', ''),
+                        is_active=getattr(user, 'is_active', True),
+                    )
+            else:
+                # This is already a Django user
+                actual_user = user
+                
+            return (
+                AdvisoryAlert.objects.filter(farm__owner=actual_user)
+                .select_related("farm")
+                .order_by("-created_at")
+            )
+        except Exception as e:
+            logger.error(f"Error in AdvisoryAlertViewSet get_queryset: {e}")
+            return AdvisoryAlert.objects.none()
 
     def list(self, request, *args, **kwargs):
         """List alerts with enhanced filtering and statistics."""
@@ -853,8 +1044,8 @@ class AdvisoryDashboardView(APIView):
     Provides aggregated data from all advisory services for dashboard display.
     """
 
-    #     permission_classes = []
-    #     authentication_classes = [JWTAuthentication, TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication, TokenAuthentication]
 
     def get(self, request):
         """Get comprehensive advisory dashboard data."""
@@ -920,6 +1111,154 @@ class AdvisoryDashboardView(APIView):
             )
 
 
+class StandaloneAdvisoryView(APIView, TokenAuthenticationMixin):
+    """
+    Standalone advisory endpoint that accepts farm_id in request body.
+    
+    This endpoint matches the original Postman request pattern `/get_advisory/`
+    and accepts the farm_id as part of the request payload.
+    """
+    
+    permission_classes = []
+    authentication_classes = [MongoTokenAuthentication, JWTAuthentication, TokenAuthentication]
+    
+    def post(self, request):
+        """Get comprehensive advisory for a farm specified in request body."""
+        try:
+            # Extract farm_id from request data
+            farm_id = request.data.get('farm_id')
+            if not farm_id:
+                return Response(
+                    {
+                        "success": False,
+                        "message": "farm_id is required in request body",
+                        "error": "Missing farm_id parameter",
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            
+            # Get current user
+            user, error = self.get_user_from_token(request)
+            if error:
+                return Response(
+                    {
+                        "success": False,
+                        "message": "Authentication required",
+                        "error": error,
+                    },
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+            
+            # Get or create Django user for MongoDB users
+            if hasattr(user, 'mongo_user'):
+                from django.contrib.auth.models import User
+                django_user, created = User.objects.get_or_create(
+                    username=user.username,
+                    defaults={
+                        'email': user.email,
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
+                        'is_active': user.is_active,
+                    }
+                )
+                actual_user = django_user
+            else:
+                actual_user = user
+            
+            # Get the farm
+            try:
+                farm = Farm.objects.get(id=farm_id, owner=actual_user, is_active=True)
+            except Farm.DoesNotExist:
+                return Response(
+                    {
+                        "success": False,
+                        "message": "Farm not found or access denied",
+                        "error": f"Farm with ID {farm_id} not found for user {actual_user.username}",
+                    },
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            
+            # Validate input data (excluding farm_id as it's already processed)
+            request_data = request.data.copy()
+            request_data.pop('farm_id', None)  # Remove farm_id from validation data
+            
+            serializer = ComprehensiveAdvisoryRequestSerializer(data=request_data)
+            if not serializer.is_valid():
+                return Response(
+                    {
+                        "success": False,
+                        "message": "Invalid input data",
+                        "errors": serializer.errors,
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            validated_data = serializer.validated_data
+            advisory_engine = AdvisoryEngine()
+
+            # Prepare farm data
+            farm_data = {
+                "id": str(farm.id),
+                "name": farm.name,
+                "latitude": farm.latitude,
+                "longitude": farm.longitude,
+                "total_area": farm.total_area,
+                "cultivated_area": farm.cultivated_area,
+                "district": farm.district,
+                "state": farm.state,
+                **validated_data,
+            }
+
+            # Generate cache key
+            cache_key = (
+                f"advisory_{farm.id}_{hash(str(sorted(validated_data.items())))}"
+            )
+            advisory_data = cache.get(cache_key)
+
+            if not advisory_data:
+                advisory_data = advisory_engine.generate_comprehensive_advisory(
+                    farm_data
+                )
+                cache.set(cache_key, advisory_data, timeout=1800)  # 30 minutes
+
+            # Save advisory session
+            session = AdvisorySession.objects.create(
+                farm=farm,
+                session_type=validated_data.get("session_type", "comprehensive"),
+                query_parameters=validated_data,
+                recommendations=advisory_data["recommendations"],
+                confidence_score=advisory_data["confidence_score"],
+            )
+
+            return Response(
+                {
+                    "success": True,
+                    "message": "Advisory generated successfully",
+                    "data": {
+                        "session_id": str(session.id),
+                        "farm_info": {
+                            "id": str(farm.id),
+                            "name": farm.name,
+                            "owner": actual_user.username,
+                        },
+                        "advisory": advisory_data,
+                        "generated_at": timezone.now().isoformat(),
+                    },
+                }
+            )
+
+        except Exception as e:
+            logger.error(f"Standalone advisory generation failed: {e}")
+            return Response(
+                {
+                    "success": False,
+                    "message": "Failed to generate advisory",
+                    "error": str(e),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
 class AdvisoryStatisticsView(APIView):
     """
     Advisory statistics endpoint.
@@ -927,8 +1266,8 @@ class AdvisoryStatisticsView(APIView):
     Provides detailed statistics and analytics for advisory services.
     """
 
-    #     permission_classes = [IsAuthenticated]
-    #     authentication_classes = [JWTAuthentication, TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication, TokenAuthentication]
 
     def get(self, request):
         """Get comprehensive advisory statistics."""
