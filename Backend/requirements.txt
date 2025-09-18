@@ -78,7 +78,7 @@ libclang==16.0.6
 ml-dtypes==0.2.0
 opt-einsum==3.3.0
 termcolor==2.4.0
-typing_extensions==4.8.0
+typing_extensions==4.5.0
 wrapt==1.14.1
 Werkzeug==3.0.1
 Markdown==3.5.2
