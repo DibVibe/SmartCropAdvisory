@@ -5,7 +5,13 @@ services:
     buildCommand: "./build.sh"
     startCommand: "gunicorn SmartCropAdvisory.wsgi:application"
     envVars:
+      # Python Version
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+
       # Django Core Settings
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: DJANGO_ENV

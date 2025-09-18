@@ -2,17 +2,22 @@
 
 set -o errexit
 
-# Upgrade pip
-pip install --upgrade pip
+# Ensure we're using Python 3.11
+python --version
 
-# Install production dependencies
+# Upgrade pip, setuptools, and wheel first
+pip install --upgrade pip setuptools wheel
+
+# Install dependencies
 pip install -r requirements.txt
 
-# Install Gunicorn if not in requirements.txt
+# Install gunicorn separately if needed
 pip install gunicorn
 
 # Collect static files
 python manage.py collectstatic --noinput
 
-# Run migrations for Django's internal SQLite
+# Run migrations
 python manage.py migrate --noinput
+
+echo "Build completed successfully!"
