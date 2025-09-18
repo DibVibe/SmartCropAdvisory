@@ -44,14 +44,6 @@ API_VERSION = SHARED_CONFIG["development"]["api_version"]
 # Secret Key from .env file
 SECRET_KEY = config("DJANGO_SECRET_KEY", default="")
 
-# Generate fallback secret key if not in .env
-if not SECRET_KEY:
-    if config("DJANGO_ENV", default="development") == "production":
-        raise ValueError("DJANGO_SECRET_KEY must be set in .env file for production")
-    else:
-        SECRET_KEY = get_random_secret_key()
-        print("🔑 Generated temporary SECRET_KEY (add DJANGO_SECRET_KEY to .env file)")
-
 # Environment and Debug
 DJANGO_ENV = config("DJANGO_ENV", default="development")
 DEBUG = config("DEBUG", default=True, cast=bool)
