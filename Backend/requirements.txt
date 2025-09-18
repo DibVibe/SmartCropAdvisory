@@ -70,7 +70,7 @@ grpcio==1.59.3
 absl-py==2.0.0
 astunparse==1.6.3
 flatbuffers==23.5.26
-gast==0.5.4
+gast==0.4.0  # Fixed: Downgraded from 0.5.4 for tensorflow-cpu compatibility
 google-pasta==0.2.0
 google-auth==2.25.2
 google-auth-oauthlib==1.1.0
@@ -89,6 +89,7 @@ requests-oauthlib==2.0.0
 rsa==4.9.1
 six==1.17.0
 attrs==25.3.0
+
 
 # Data Visualization
 matplotlib==3.8.2
