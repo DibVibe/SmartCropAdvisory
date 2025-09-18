@@ -11,7 +11,8 @@
     "test:ci": "jest --ci",
     "test:e2e": "playwright test",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "export": "next export"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",

@@ -1,0 +1,70 @@
+services:
+  - type: web
+    name: smartcrop-backend
+    runtime: python3
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn SmartCropAdvisory.wsgi:application"
+    envVars:
+      # Django Core Settings
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_ENV
+        value: production
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com,smartcropadvisory.onrender.com"
+
+      # MongoDB Connection
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DATABASE
+        value: smartcrop_db
+
+      # Redis Cache
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: smartcrop-redis
+          property: connectionString
+
+      # External APIs
+      - key: OPENWEATHER_API_KEY
+        sync: false
+      - key: SENTINEL_HUB_CLIENT_ID
+        sync: false
+      - key: SENTINEL_HUB_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
+
+      # Email Settings
+      - key: EMAIL_HOST
+        value: smtp.gmail.com
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+
+      # Frontend URL for CORS
+      - key: FRONTEND_URL
+        value: https://smartcropadvisory.vercel.app
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://smartcropadvisory.vercel.app
+
+      # Python Version
+      - key: PYTHON_VERSION
+        value: "3.11"
+
+      # Port (Render provides this)
+      - key: PORT
+        value: "10000"
+
+# Redis service for caching
+services:
+  - type: redis
+    name: smartcrop-redis
+    plan: free
+    ipAllowList: []
