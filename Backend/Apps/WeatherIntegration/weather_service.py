@@ -13,7 +13,7 @@ class WeatherService:
     """Service for fetching and processing weather data"""
 
     def __init__(self):
-        self.api_key = settings.OPENWEATHER_API_KEY
+        self.api_key = settings.API_KEYS["OPENWEATHER_API_KEY"]
         self.base_url = "https://api.openweathermap.org/data/2.5"
         self.cache_timeout = 1800  # 30 minutes
 
