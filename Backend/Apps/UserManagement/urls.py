@@ -16,6 +16,7 @@ from .views import (
     UserStatisticsView,
     MongoUserProfileView,
 )
+from .simple_auth_views import simple_login, simple_register, simple_profile, simple_dashboard
 
 
 def user_health_check(request):
@@ -38,13 +39,18 @@ app_name = "users"
 urlpatterns = [
     # Health check for user service
     path("health/", user_health_check, name="user-health"),  # 🆕 NEW
-    # Authentication endpoints
-    path("register/", UserRegistrationView.as_view(), name="register"),
-    path("login/", LoginView.as_view(), name="login"),
+    # Authentication endpoints (Simple version - works without MongoDB)
+    path("register/", simple_register, name="register"),
+    path("login/", simple_login, name="login"),
+    path("dashboard/", simple_dashboard, name="dashboard"),
+    # MongoDB endpoints (for production use)
+    path("mongo-register/", UserRegistrationView.as_view(), name="mongo-register"),
+    path("mongo-login/", LoginView.as_view(), name="mongo-login"),
+    path("mongo-dashboard/", UserDashboardView.as_view(), name="mongo-dashboard"),
     path("logout/", LogoutView.as_view(), name="logout"),
     path("change-password/", ChangePasswordView.as_view(), name="change-password"),
-    # Dashboard and analytics
-    path("dashboard/", UserDashboardView.as_view(), name="dashboard"),
+    # Dashboard and analytics (MongoDB version - backup)
+    path("dashboard-mongo/", UserDashboardView.as_view(), name="dashboard-mongo"),
     path("statistics/", UserStatisticsView.as_view(), name="statistics"),
     # Profile shortcuts (additional convenience endpoints)
     path(

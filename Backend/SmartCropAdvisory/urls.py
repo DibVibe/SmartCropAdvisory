@@ -480,12 +480,13 @@ if not getattr(settings, "DISABLE_SPECTACULAR", True):
 # 🌾 API ENDPOINTS - AGRICULTURAL APPS
 # ==========================================
 api_v1_urls = [
-    path("api/v1/crop/", include("Apps.CropAnalysis.urls")),
-    path("api/v1/weather/", include("Apps.WeatherIntegration.urls")),
-    path("api/v1/irrigation/", include("Apps.IrrigationAdvisor.urls")),
-    path("api/v1/market/", include("Apps.MarketAnalysis.urls")),
+    # Temporarily commented out to get basic server running
+    # path("api/v1/crop/", include("Apps.CropAnalysis.urls")),
+    # path("api/v1/weather/", include("Apps.WeatherIntegration.urls")),
+    # path("api/v1/irrigation/", include("Apps.IrrigationAdvisor.urls")),
+    # path("api/v1/market/", include("Apps.MarketAnalysis.urls")),
     path("api/v1/users/", include("Apps.UserManagement.urls")),
-    path("api/v1/advisory/", include("Apps.Advisory.urls")),
+    # path("api/v1/advisory/", include("Apps.Advisory.urls")),
 ]
 
 urlpatterns.extend(api_v1_urls)
