@@ -21,7 +21,7 @@ export function WeatherWidget({
   );
   const [forecast, setForecast] = useState<WeatherForecast[]>([]);
   const [loadingState, setLoadingState] = useState<LoadingState>("idle");
-  const [loading, setLoading] = useState(!initialWeather);
+  const [loading, setLoading] = useState<boolean>(!initialWeather);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch weather data if not provided
@@ -30,18 +30,28 @@ export function WeatherWidget({
       fetchWeatherData();
     } else {
       setWeather(initialWeather);
+      setLoading(false);
     }
   }, [initialWeather]);
 
-  const fetchWeatherData = async () => {
+  const fetchWeatherData = async (): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
+      setLoadingState("loading");
 
       // Get user location
       const position = await new Promise<GeolocationPosition>(
         (resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject);
+          if (!navigator.geolocation) {
+            reject(new Error("Geolocation is not supported"));
+            return;
+          }
+
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            timeout: 10000,
+            enableHighAccuracy: true,
+          });
         }
       );
 
@@ -54,10 +64,14 @@ export function WeatherWidget({
       ]);
 
       setWeather(currentWeather);
-      setForecast(weatherForecast);
+      setForecast(Array.isArray(weatherForecast) ? weatherForecast : []);
+      setLoadingState("success");
     } catch (err) {
       console.error("Failed to fetch weather:", err);
-      setError("Failed to load weather data");
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load weather data";
+      setError(errorMessage);
+      setLoadingState("error");
 
       // Try with default location (New Delhi)
       try {
@@ -66,47 +80,88 @@ export function WeatherWidget({
           77.209
         );
         setWeather(defaultWeather);
+        setError(null);
+        setLoadingState("success");
       } catch (defaultErr) {
         console.error("Failed to fetch default weather:", defaultErr);
+        setLoadingState("error");
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const getWeatherIcon = (condition: string): string => {
+  const getWeatherIcon = (condition: string | null | undefined): string => {
     const iconMap: Record<string, string> = {
       clear: "☀️",
       sunny: "☀️",
       cloudy: "☁️",
       partly_cloudy: "⛅",
+      "partly cloudy": "⛅",
       overcast: "☁️",
       rainy: "🌧️",
+      rain: "🌧️",
       drizzle: "🌦️",
       stormy: "⛈️",
       thunderstorm: "⛈️",
+      thunder: "⛈️",
       snowy: "🌨️",
+      snow: "🌨️",
       foggy: "🌫️",
+      fog: "🌫️",
       mist: "🌫️",
       windy: "💨",
+      wind: "💨",
     };
 
-    return iconMap[condition.toLowerCase()] || "🌤️";
+    // Handle null, undefined, or empty strings
+    if (!condition || typeof condition !== "string") {
+      return "🌤️";
+    }
+
+    const normalizedCondition = condition.toLowerCase().trim();
+    return iconMap[normalizedCondition] || "🌤️";
   };
 
   const getAgriculturalAdvice = (weather: WeatherData): string => {
-    if (weather.temperature > 35) {
+    if (!weather) {
+      return "⚠️ Weather data unavailable";
+    }
+
+    const temp = weather.temperature || 0;
+    const humidity = weather.humidity || 0;
+    const windSpeed = weather.wind_speed || 0;
+    const condition = weather.condition || "";
+
+    if (temp > 35) {
       return "🌡️ High temperature - Consider extra irrigation";
-    } else if (weather.temperature < 10) {
+    } else if (temp < 10) {
       return "❄️ Low temperature - Protect sensitive crops";
-    } else if (weather.humidity > 80) {
+    } else if (humidity > 80) {
       return "💧 High humidity - Monitor for fungal diseases";
-    } else if (weather.wind_speed > 20) {
+    } else if (windSpeed > 20) {
       return "💨 Strong winds - Secure tall crops";
-    } else if (weather.condition.toLowerCase().includes("rain")) {
+    } else if (condition && condition.toLowerCase().includes("rain")) {
       return "🌧️ Rainy conditions - Delay spraying activities";
     } else {
       return "✅ Good conditions for farming activities";
+    }
+  };
+
+  const formatDate = (dateString: string): string => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en", { weekday: "short" });
+    } catch {
+      return "N/A";
+    }
+  };
+
+  const handleRefresh = (): void => {
+    if (onRefresh) {
+      onRefresh();
+    } else {
+      fetchWeatherData();
     }
   };
 
@@ -137,8 +192,12 @@ export function WeatherWidget({
           <div className="text-center">
             <div className="text-4xl mb-4">⚠️</div>
             <p className="text-gray-600 mb-4">{error}</p>
-            <button onClick={fetchWeatherData} className="btn-secondary btn-sm">
-              Retry
+            <button
+              onClick={fetchWeatherData}
+              className="btn-secondary btn-sm"
+              disabled={loading}
+            >
+              {loading ? "Retrying..." : "Retry"}
             </button>
           </div>
         </div>
@@ -156,7 +215,15 @@ export function WeatherWidget({
         </div>
         <div className="card-body flex items-center justify-center">
           <div className="text-center text-gray-600">
-            Weather data not available
+            <div className="text-4xl mb-4">🌤️</div>
+            <p>Weather data not available</p>
+            <button
+              onClick={fetchWeatherData}
+              className="btn-secondary btn-sm mt-4"
+              disabled={loading}
+            >
+              Load Weather Data
+            </button>
           </div>
         </div>
       </div>
@@ -176,12 +243,13 @@ export function WeatherWidget({
             </p>
           </div>
           <button
-            onClick={onRefresh || fetchWeatherData}
-            className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+            onClick={handleRefresh}
+            className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
             title="Refresh weather data"
+            disabled={loading}
           >
             <svg
-              className="w-4 h-4"
+              className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -203,10 +271,12 @@ export function WeatherWidget({
             <div className="text-5xl">{getWeatherIcon(weather.condition)}</div>
             <div>
               <div className="text-3xl font-bold text-gray-900">
-                {Math.round(weather.temperature)}°C
+                {Math.round(weather.temperature || 0)}°C
               </div>
               <div className="text-sm text-gray-600 capitalize">
-                {weather.condition.replace("_", " ")}
+                {weather.condition
+                  ? weather.condition.replace(/_/g, " ").toLowerCase()
+                  : "Unknown"}
               </div>
             </div>
           </div>
@@ -214,7 +284,7 @@ export function WeatherWidget({
           <div className="text-right">
             <div className="text-sm text-gray-500 mb-1">Feels like</div>
             <div className="text-lg font-semibold">
-              {Math.round(weather.feels_like || weather.temperature)}°C
+              {Math.round(weather.feels_like || weather.temperature || 0)}°C
             </div>
           </div>
         </div>
@@ -222,20 +292,20 @@ export function WeatherWidget({
         <div className="grid grid-cols-3 gap-4 mb-4">
           <div className="text-center">
             <div className="text-gray-500 text-xs mb-1">Humidity</div>
-            <div className="font-semibold">{weather.humidity}%</div>
+            <div className="font-semibold">{weather.humidity || 0}%</div>
           </div>
           <div className="text-center">
             <div className="text-gray-500 text-xs mb-1">Wind</div>
-            <div className="font-semibold">{weather.wind_speed} km/h</div>
+            <div className="font-semibold">{weather.wind_speed || 0} km/h</div>
           </div>
           <div className="text-center">
             <div className="text-gray-500 text-xs mb-1">Pressure</div>
-            <div className="font-semibold">{weather.pressure} hPa</div>
+            <div className="font-semibold">{weather.pressure || 0} hPa</div>
           </div>
         </div>
 
         {/* Agricultural Advice */}
-        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
           <div className="text-xs font-medium text-green-800 mb-1">
             Agricultural Advice
           </div>
@@ -245,29 +315,39 @@ export function WeatherWidget({
         </div>
 
         {/* Forecast Preview */}
-        {forecast.length > 0 && (
-          <div className="mt-4 pt-3 border-t border-gray-100">
+        {forecast && forecast.length > 0 && (
+          <div className="pt-3 border-t border-gray-100">
             <div className="text-xs font-medium text-gray-500 mb-2">
               5-Day Forecast
             </div>
-            <div className="flex justify-between text-xs">
+            <div className="flex justify-between text-xs overflow-x-auto">
               {forecast.slice(0, 5).map((day, index) => (
-                <div key={index} className="text-center">
+                <div
+                  key={`forecast-${index}`}
+                  className="text-center flex-shrink-0 px-1"
+                >
                   <div className="text-gray-500 mb-1">
-                    {new Date(day.date).toLocaleDateString("en", {
-                      weekday: "short",
-                    })}
+                    {formatDate(day.date)}
                   </div>
                   <div className="text-lg mb-1">
                     {getWeatherIcon(day.condition)}
                   </div>
-                  <div className="font-medium">{Math.round(day.max_temp)}°</div>
+                  <div className="font-medium">
+                    {Math.round(day.max_temp || 0)}°
+                  </div>
                   <div className="text-gray-400">
-                    {Math.round(day.min_temp)}°
+                    {Math.round(day.min_temp || 0)}°
                   </div>
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Error message if present but weather data is available */}
+        {error && weather && (
+          <div className="mt-2 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+            {error}
           </div>
         )}
       </div>

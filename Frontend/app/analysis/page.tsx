@@ -1,7 +1,6 @@
-// app/analysis/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CropAnalysisForm } from "@/components/forms/CropAnalysisForm";
 import {
   PhotoIcon,
@@ -11,6 +10,59 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
+
+// Safe Date Component to prevent hydration errors
+interface SafeDateProps {
+  date: string | Date;
+  type?: "date" | "datetime";
+  className?: string;
+}
+
+function SafeDate({ date, type = "date", className }: SafeDateProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <span className={className} suppressHydrationWarning>
+        --
+      </span>
+    );
+  }
+
+  try {
+    const dateObj = typeof date === "string" ? new Date(date) : date;
+
+    if (type === "datetime") {
+      return (
+        <span className={className}>
+          {dateObj.toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </span>
+      );
+    }
+
+    return (
+      <span className={className}>
+        {dateObj.toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        })}
+      </span>
+    );
+  } catch (error) {
+    return <span className={className}>Invalid Date</span>;
+  }
+}
 
 interface AnalysisResult {
   success: boolean;
@@ -36,6 +88,11 @@ export default function CropAnalysisPage() {
     null
   );
   const [analysisHistory, setAnalysisHistory] = useState<AnalysisResult[]>([]);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const tabs = [
     { id: "analysis", name: "Crop Analysis", icon: PhotoIcon },
@@ -118,6 +175,28 @@ export default function CropAnalysisPage() {
     },
   ];
 
+  // Show loading state until mounted
+  if (!mounted) {
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="h-8 bg-gray-200 rounded mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200"
+            >
+              <div className="h-16 bg-gray-200 rounded"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -135,7 +214,7 @@ export default function CropAnalysisPage() {
               🤖 AI Analysis Ready
             </div>
             <div className="text-sm text-gray-500">
-              Last updated: {new Date().toLocaleDateString()}
+              Last updated: <SafeDate date={new Date()} />
             </div>
           </div>
         </div>
@@ -259,9 +338,10 @@ export default function CropAnalysisPage() {
                           🌾 Analysis Results
                         </h3>
                         <div className="text-sm text-gray-500">
-                          {new Date(
-                            analysisResults.data.timestamp
-                          ).toLocaleString()}
+                          <SafeDate
+                            date={analysisResults.data.timestamp}
+                            type="datetime"
+                          />
                         </div>
                       </div>
 
@@ -442,9 +522,10 @@ export default function CropAnalysisPage() {
                             {analysis.data?.crop_type}
                           </h4>
                           <p className="text-sm text-gray-500">
-                            {new Date(
-                              analysis.data?.timestamp || ""
-                            ).toLocaleString()}
+                            <SafeDate
+                              date={analysis.data?.timestamp || ""}
+                              type="datetime"
+                            />
                           </p>
                         </div>
                         <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
@@ -489,7 +570,7 @@ export default function CropAnalysisPage() {
                             {analysis.cropType}
                           </h4>
                           <p className="text-sm text-gray-500">
-                            Analyzed on {analysis.date}
+                            Analyzed on <SafeDate date={analysis.date} />
                           </p>
                         </div>
                       </div>
