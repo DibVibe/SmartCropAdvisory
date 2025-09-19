@@ -1,5 +1,6 @@
 "use client";
 
+import axios from "axios";
 import React, { createContext, useContext } from "react";
 import api from "@/lib/api/api";
 
@@ -102,7 +103,9 @@ export interface SystemHealth {
 class WeatherService {
   async getCurrentWeather(lat: number, lon: number): Promise<WeatherData> {
     // Backend router mounts WeatherAPIViewSet at /api/v1/weather/api/current/
-    const response = await api.get(`/weather/api/current/?lat=${lat}&lon=${lon}`);
+    const response = await api.get(
+      `/weather/api/current/?lat=${lat}&lon=${lon}`
+    );
     return response.data;
   }
 
