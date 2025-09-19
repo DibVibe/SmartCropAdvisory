@@ -5,11 +5,6 @@
   "installCommand": "npm install",
   "framework": "nextjs",
   "regions": ["bom1"],
-  "env": {
-    "NEXT_PUBLIC_API_URL": "@smartcrop_api_url",
-    "NEXT_PUBLIC_MAPBOX_TOKEN": "@mapbox_token",
-    "NEXT_PUBLIC_GOOGLE_MAPS_KEY": "@google_maps_key"
-  },
   "headers": [
     {
       "source": "/api/(.*)",
@@ -30,7 +25,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://smartcropadvisory.onrender.com/api/:path*"
+      "destination": "https://smartcropadvisory.onrender.com/api/v1/:path*"
     }
   ]
 }
