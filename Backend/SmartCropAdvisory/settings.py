@@ -52,7 +52,7 @@ TESTING = "test" in sys.argv
 # Allowed Hosts from .env
 ALLOWED_HOSTS = config(
     "ALLOWED_HOSTS",
-    default="127.0.0.1,localhost,.onrender.com,.railway.app,.herokuapp.com,.vercel.app",
+    default="127.0.0.1,localhost,smartcropadvisory.onrender.com,.onrender.com,.railway.app,.herokuapp.com,.vercel.app",
     cast=Csv(),
 )
 
