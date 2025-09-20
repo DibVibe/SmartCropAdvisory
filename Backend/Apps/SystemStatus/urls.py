@@ -18,4 +18,14 @@ urlpatterns = [
     path("health/", views.health_check, name="health-check"),
     # Detailed health check
     path("health/details/", views.health_details, name="health-details"),
+    # System logs endpoint
+    path("logs/", views.system_logs, name="system-logs"),
+    # ML models status endpoint
+    path("models/", views.model_status, name="model-status"),
+    # Cache statistics endpoint
+    path("cache/", views.cache_stats, name="cache-stats"),
+    # API metrics endpoint
+    path("metrics/", views.api_metrics, name="api-metrics"),
+    # Notifications endpoint
+    path("notifications/runread/", views.notifications_unread, name="notifications-unread"),
 ]

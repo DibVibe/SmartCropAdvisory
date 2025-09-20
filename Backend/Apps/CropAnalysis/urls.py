@@ -68,4 +68,33 @@ urlpatterns = [
         views.FarmingTipViewSet.as_view({"get": "daily"}),
         name="daily-tip",
     ),
+    # New crop analysis endpoint to match user's request
+    path(
+        "analysis/",
+        views.CropViewSet.as_view({"get": "analysis"}),
+        name="crop-analysis",
+    ),
+    # Bulk crop upload endpoint
+    path(
+        "bulk-upload/",
+        views.CropViewSet.as_view({"post": "bulk_upload"}),
+        name="bulk-crop-upload",
+    ),
+    # MongoDB query endpoint
+    path(
+        "mongo/query/",
+        views.CropViewSet.as_view({"post": "mongo_query"}),
+        name="mongo-crop-query",
+    ),
+    # Image upload and analysis endpoints
+    path(
+        "images/upload/",
+        views.CropImageViewSet.as_view({"post": "upload"}),
+        name="crop-image-upload",
+    ),
+    path(
+        "images/analyze/",
+        views.CropImageViewSet.as_view({"get": "analyze"}),
+        name="crop-image-analyze",
+    ),
 ]

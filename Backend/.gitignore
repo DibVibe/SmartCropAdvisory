@@ -1,0 +1,108 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+static/
+
+# Environment variables
+.env
+.env.local
+.env.production.local
+.env.development.local
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Test files and temporary files
+test_*.jpg
+test_*.png
+test_*.jpeg
+test_*.webp
+test_crop_image.*
+debug_*.py
+temp_*.py
+*_test.py
+sample_*.csv
+create_test_*.py
+get_fresh_token.py
+debug_token.py
+final_test.py
+create_app_user.py
+create_mongo_users.py
+create_smartcrop_user_with_admin.py
+setup_mongodb_user.py
+debug_moisture_error.py
+
+# Cache and temporary directories
+.cache/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Logs
+*.log
+logs/
+Logs/
+
+# Redis dumps
+dump.rdb
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Node modules (if any)
+node_modules/
+
+# Documentation builds
+docs/_build/

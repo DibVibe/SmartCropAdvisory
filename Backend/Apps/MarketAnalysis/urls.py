@@ -12,6 +12,7 @@ from .views import (
     FarmerTransactionViewSet,
     MarketAlertViewSet,
     MarketAnalysisViewSet,
+    MarketOpportunitiesViewSet,
 )
 
 @api_view(['GET'])
@@ -32,7 +33,8 @@ def market_root(request):
             "trends": f"{base_url}/trends/",
             "analysis": f"{base_url}/analysis/",
             "alerts": f"{base_url}/alerts/",
-            "transactions": f"{base_url}/transactions/"
+            "transactions": f"{base_url}/transactions/",
+            "opportunities": f"{base_url}/opportunities/"
         },
         "features": [
             "Real-time price tracking",
@@ -53,6 +55,7 @@ router.register(r"trends", MarketTrendViewSet)
 router.register(r"transactions", FarmerTransactionViewSet, basename="transaction")
 router.register(r"alerts", MarketAlertViewSet, basename="alert")
 router.register(r"analysis", MarketAnalysisViewSet, basename="analysis")
+router.register(r"opportunities", MarketOpportunitiesViewSet, basename="opportunities")
 
 app_name = "market"
 

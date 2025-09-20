@@ -99,6 +99,8 @@ THIRD_PARTY_APPS = [
     "rest_framework_mongoengine",
     # Authentication & JWT
     "rest_framework_simplejwt",
+    # WebSocket support
+    "channels",
     # Additional utilities
     "django_extensions",
     "django_celery_results",
@@ -228,6 +230,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "SmartCropAdvisory.wsgi.application"
+ASGI_APPLICATION = "SmartCropAdvisory.asgi.application"
 
 # ==========================================
 # 💾 MONGODB-ONLY DATABASE CONFIGURATION
@@ -275,15 +278,42 @@ MONGODB_URI = config("MONGODB_URI", default="")
 if MONGODB_URI:
     mongoengine.connect(host=MONGODB_URI, connect=False, tz_aware=True)
 else:
-    if MONGODB_SETTINGS["username"] and MONGODB_SETTINGS["password"]:
-        mongoengine.connect(**MONGODB_SETTINGS)
+    # Connect to MongoDB with authentication if credentials are provided
+    username = MONGODB_SETTINGS["username"]
+    password = MONGODB_SETTINGS["password"]
+    
+    if username and password:
+        # Connect with authentication
+        mongoengine.connect(
+            db=MONGODB_SETTINGS["db"],
+            host=MONGODB_SETTINGS["host"],
+            port=MONGODB_SETTINGS["port"],
+            username=username,
+            password=password,
+            authentication_source=MONGODB_SETTINGS["authentication_source"],
+            authentication_mechanism=MONGODB_SETTINGS["authentication_mechanism"],
+            connect=False,
+            tz_aware=True,
+            uuidRepresentation="standard",
+            serverSelectionTimeoutMS=MONGODB_SETTINGS["serverSelectionTimeoutMS"],
+            connectTimeoutMS=MONGODB_SETTINGS["connectTimeoutMS"],
+            socketTimeoutMS=MONGODB_SETTINGS["socketTimeoutMS"],
+            maxPoolSize=MONGODB_SETTINGS["maxPoolSize"],
+            minPoolSize=MONGODB_SETTINGS["minPoolSize"],
+            maxIdleTimeMS=MONGODB_SETTINGS["maxIdleTimeMS"],
+        )
     else:
+        # Connect without authentication (for local development)
         mongoengine.connect(
             db=MONGODB_SETTINGS["db"],
             host=MONGODB_SETTINGS["host"],
             port=MONGODB_SETTINGS["port"],
             connect=False,
             tz_aware=True,
+            uuidRepresentation="standard",
+            serverSelectionTimeoutMS=5000,  # 5 second timeout
+            connectTimeoutMS=5000,
+            socketTimeoutMS=0,  # No timeout
         )
 
 # ==========================================
@@ -617,6 +647,39 @@ REDIS_STATUS = {
 
 print(f"🔧 Cache configuration: {'Redis' if REDIS_AVAILABLE else 'Local Memory'}")
 
+# ==========================================
+# 📡 CHANNELS LAYERS CONFIGURATION
+# ==========================================
+
+# Channel layers for WebSocket support
+if REDIS_AVAILABLE:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [f"redis://{REDIS_HOST}:{REDIS_PORT}/5"],
+                "prefix": "smartcrop_channels",
+                "capacity": 1500,
+                "expiry": 60,
+                "group_expiry": 86400,  # 24 hours
+                "symmetric_encryption_keys": [SECRET_KEY[:32]],
+            },
+        },
+    }
+    print(f"🔗 WebSocket channels configured with Redis backend")
+else:
+    # Fallback to in-memory channel layer for development
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer",
+            "CONFIG": {
+                "capacity": 300,
+                "expiry": 60,
+            },
+        },
+    }
+    print(f"🔗 WebSocket channels configured with in-memory backend")
+
 
 # ==========================================
 # 🚀 REST FRAMEWORK CONFIGURATION
@@ -624,8 +687,8 @@ print(f"🔧 Cache configuration: {'Redis' if REDIS_AVAILABLE else 'Local Memory
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "Apps.UserManagement.authentication.MongoTokenAuthentication",
         "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "Apps.UserManagement.authentication.MongoTokenAuthentication",
         "rest_framework.authentication.TokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],

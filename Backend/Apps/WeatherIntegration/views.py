@@ -170,8 +170,9 @@ class CropWeatherRequirementViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"])
     def check_suitability(self, request):
         """Check if current weather is suitable for crops"""
-        lat = float(request.query_params.get("latitude", 0))
-        lon = float(request.query_params.get("longitude", 0))
+        # Accept both full and abbreviated parameter names
+        lat = float(request.query_params.get("latitude", request.query_params.get("lat", 0)))
+        lon = float(request.query_params.get("longitude", request.query_params.get("lon", 0)))
 
         if not lat or not lon:
             return Response(

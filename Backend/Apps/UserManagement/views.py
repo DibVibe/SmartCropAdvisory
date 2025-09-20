@@ -1124,6 +1124,133 @@ class NotificationViewSet(viewsets.ModelViewSet, TokenAuthenticationMixin):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+    @action(detail=False, methods=["patch", "post"])
+    def bulk(self, request):
+        """Bulk operations on notifications"""
+        try:
+            user, error = self.get_user_from_token(request)
+            if error:
+                return Response(error, status=status.HTTP_401_UNAUTHORIZED)
+
+            action_type = request.data.get('action')
+            notification_ids = request.data.get('notification_ids', [])
+            
+            if not action_type:
+                return Response(
+                    {
+                        "success": False, 
+                        "message": "Action type is required. Supported actions: 'mark_read', 'mark_unread', 'delete'"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            
+            count = 0
+            
+            if action_type == 'mark_read':
+                if notification_ids:
+                    # Mark specific notifications as read
+                    for notif_id in notification_ids:
+                        try:
+                            notification = MongoNotification.objects(
+                                id=notif_id, user_id=str(user.id)
+                            ).first()
+                            if notification and not notification.is_read:
+                                notification.is_read = True
+                                notification.read_at = timezone.now()
+                                notification.save()
+                                count += 1
+                        except Exception:
+                            continue  # Skip invalid IDs
+                else:
+                    # Mark all notifications as read
+                    notifications = MongoNotification.objects(
+                        user_id=str(user.id), is_read=False
+                    )
+                    for notification in notifications:
+                        notification.is_read = True
+                        notification.read_at = timezone.now()
+                        notification.save()
+                        count += 1
+                        
+                return Response({
+                    "success": True,
+                    "message": f"{count} notifications marked as read",
+                    "action": "mark_read",
+                    "count": count
+                })
+            
+            elif action_type == 'mark_unread':
+                if notification_ids:
+                    # Mark specific notifications as unread
+                    for notif_id in notification_ids:
+                        try:
+                            notification = MongoNotification.objects(
+                                id=notif_id, user_id=str(user.id)
+                            ).first()
+                            if notification and notification.is_read:
+                                notification.is_read = False
+                                notification.read_at = None
+                                notification.save()
+                                count += 1
+                        except Exception:
+                            continue  # Skip invalid IDs
+                else:
+                    return Response(
+                        {
+                            "success": False,
+                            "message": "notification_ids are required for mark_unread action"
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                    
+                return Response({
+                    "success": True,
+                    "message": f"{count} notifications marked as unread",
+                    "action": "mark_unread",
+                    "count": count
+                })
+            
+            elif action_type == 'delete':
+                if notification_ids:
+                    # Delete specific notifications
+                    for notif_id in notification_ids:
+                        try:
+                            notification = MongoNotification.objects(
+                                id=notif_id, user_id=str(user.id)
+                            ).first()
+                            if notification:
+                                notification.delete()
+                                count += 1
+                        except Exception:
+                            continue  # Skip invalid IDs
+                else:
+                    # Delete all notifications
+                    notifications = MongoNotification.objects(user_id=str(user.id))
+                    count = len(notifications)
+                    notifications.delete()
+                    
+                return Response({
+                    "success": True,
+                    "message": f"{count} notifications deleted",
+                    "action": "delete",
+                    "count": count
+                })
+            
+            else:
+                return Response(
+                    {
+                        "success": False,
+                        "message": f"Unsupported action: {action_type}. Supported actions: 'mark_read', 'mark_unread', 'delete'"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+                
+        except Exception as e:
+            return Response(
+                {"success": False, "message": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
 
 class FeedbackViewSet(viewsets.ModelViewSet, TokenAuthenticationMixin):
     """Feedback ViewSet - MongoDB version"""
