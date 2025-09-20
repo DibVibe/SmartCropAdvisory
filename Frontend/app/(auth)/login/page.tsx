@@ -216,7 +216,7 @@ export default function LoginPage() {
     }
   };
 
-  // Enhanced demo login with debugging
+  // Enhanced demo login with offline fallback
   const handleDemoLogin = async () => {
     setLoadingState("loading");
     setError(null);
@@ -236,13 +236,81 @@ export default function LoginPage() {
         }, 800);
       } else {
         console.log("❌ Demo login failed:", result.error);
-        setLoadingState("error");
-        setError("Demo account not available. Please use your credentials.");
+        // Check if it's a network error and use offline mode
+        if (result.error?.includes('Unable to connect') || result.error?.includes('Network error')) {
+          console.log("🌐 Backend unavailable, using offline demo mode");
+          
+          // Create a mock user for demo purposes
+          const mockUser = {
+            id: "demo-123",
+            username: "demo_farmer",
+            email: "demo@smartcrop.com",
+            first_name: "Demo",
+            last_name: "Farmer",
+            is_active: true,
+            date_joined: new Date().toISOString(),
+            profile: {
+              farm_name: "Demo Farm",
+              location: "Demo Location",
+              crops: ["corn", "wheat"]
+            }
+          };
+          
+          // Store demo data locally
+          localStorage.setItem("authToken", "demo-token-offline-mode");
+          localStorage.setItem("userData", JSON.stringify(mockUser));
+          localStorage.setItem("offlineMode", "true");
+          
+          setLoadingState("success");
+          setRedirecting(true);
+          
+          setTimeout(() => {
+            console.log("🚀 Offline demo redirect to dashboard");
+            window.location.href = "/dashboard"; // Force page reload to pick up new auth state
+          }, 800);
+        } else {
+          setLoadingState("error");
+          setError("Demo account not available. Please use your credentials.");
+        }
       }
     } catch (err) {
       console.error("❌ Demo login error:", err);
-      setLoadingState("error");
-      setError("Demo login failed");
+      
+      // If it's a network error, enable offline mode
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      if (errorMessage.includes('Unable to connect') || errorMessage.includes('Network error')) {
+        console.log("🌐 Enabling offline demo mode due to network error");
+        
+        const mockUser = {
+          id: "demo-123",
+          username: "demo_farmer",
+          email: "demo@smartcrop.com",
+          first_name: "Demo",
+          last_name: "Farmer",
+          is_active: true,
+          date_joined: new Date().toISOString(),
+          profile: {
+            farm_name: "Demo Farm",
+            location: "Demo Location",
+            crops: ["corn", "wheat"]
+          }
+        };
+        
+        localStorage.setItem("authToken", "demo-token-offline-mode");
+        localStorage.setItem("userData", JSON.stringify(mockUser));
+        localStorage.setItem("offlineMode", "true");
+        
+        setLoadingState("success");
+        setRedirecting(true);
+        
+        setTimeout(() => {
+          console.log("🚀 Offline demo redirect to dashboard");
+          window.location.href = "/dashboard";
+        }, 800);
+      } else {
+        setLoadingState("error");
+        setError("Demo login failed");
+      }
     }
   };
 

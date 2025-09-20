@@ -321,7 +321,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       return data;
     } catch (error) {
       console.error("❌ API call failed:", error);
-      throw error;
+      
+      // Handle network errors more gracefully
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('Unable to connect to server. Please ensure the backend is running on http://localhost:8000');
+      }
+      
+      // Handle cases where error doesn't have expected properties
+      if (error instanceof Error) {
+        throw error;
+      }
+      
+      // Fallback for unknown error types
+      throw new Error('Network error occurred. Please check your connection.');
     }
   };
 
